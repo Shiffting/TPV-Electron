@@ -1,0 +1,97 @@
+TPV API escuchando en http://localhost:8080
+[0mGET /health [32m200[0m 2.189 ms - 43[0m
+[0mPOST /tickets [32m200[0m 17.183 ms - 14[0m
+[0mPOST /tickets/1/lineas [32m200[0m 5.524 ms - 13[0m
+[0mPOST /tickets/1/lineas [32m200[0m 3.128 ms - 13[0m
+[0mPOST /tickets/1/pagar-parcial [32m200[0m 3.903 ms - 48[0m
+[0mPOST /tickets/2/cerrar [32m200[0m 2.793 ms - 11[0m
+[0mPOST /tickets/lineas/3/propiedades [33m404[0m 0.607 ms - 168[0m
+[0mPOST /tickets/lineas/2/propiedades [33m404[0m 0.161 ms - 168[0m
+[0mPOST /tickets/lineas/1/propiedades [33m404[0m 0.103 ms - 168[0m
+TPV API escuchando en http://localhost:8080
+[0mPOST /tickets/lineas/1/propiedades [32m200[0m 15.949 ms - 27[0m
+[0mGET /mesas/ocupadas [32m200[0m 1.525 ms - 2[0m
+TPV API escuchando en http://localhost:8080
+[0mGET /report/summary?from=2025-10-01&to=2025-10-31 [33m401[0m 1.348 ms - 20[0m
+[0mPOST /auth/login [32m200[0m 73.251 ms - 248[0m
+[0mPOST /report/summary [33m404[0m 2.144 ms - 154[0m
+[0mGET /report/summary [32m200[0m 6.002 ms - 293[0m
+[0mPOST /auth/login [32m200[0m 56.260 ms - 248[0m
+[0mGET /report/summary [32m200[0m 1.793 ms - 293[0m
+TPV API escuchando en http://localhost:8080
+[0mPOST /caja/abrir [33m404[0m 5.482 ms - 43[0m
+TPV API escuchando en http://localhost:8080
+[0mPOST /caja/abrir [33m404[0m 5.322 ms - 43[0m
+[0mPOST /caja/abrir [33m404[0m 0.489 ms - 43[0m
+[0mPOST /caja/abrir [33m404[0m 0.882 ms - 43[0m
+TPV API escuchando en http://localhost:8080
+[0mPOST /caja/abrir [33m401[0m 7.062 ms - 27[0m
+[0mPOST /auth/login [32m200[0m 73.158 ms - 248[0m
+[0mPOST /caja/abrir [32m200[0m 6.538 ms - 14[0m
+[0mPOST /caja/movimiento [33m400[0m 0.759 ms - 26[0m
+[0mPOST /caja/movimiento [32m200[0m 3.712 ms - 8[0m
+[0mGET /caja/abierta [32m200[0m 2.844 ms - 397[0m
+[0mPOST /caja/cerrar [32m200[0m 5.385 ms - 73[0m
+TPV API escuchando en http://localhost:8080
+[0mGET /export/ventas-por-metodo.csv?from=2025-10-01&to=2025-10-31 [32m200[0m 17.866 ms - 59[0m
+[0mGET /export/top-productos.csv?from=2025-10-01&to=2025-10-31 [32m200[0m 2.466 ms - 74[0m
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+[0mGET /productos [32m200[0m 63.932 ms - 435[0m
+[0mGET /mesas [32m200[0m 2.440 ms - 417[0m
+[0mGET /health [32m200[0m 0.529 ms - 43[0m
+[0mGET /mesas/ocupadas [32m200[0m 2.082 ms - 2[0m
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
+TPV API escuchando en http://localhost:8080
