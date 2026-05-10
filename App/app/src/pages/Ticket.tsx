@@ -12,6 +12,8 @@ import {
 import "../styles/index.css";
 import ProductConfigurator from "../components/ProductConfigurator";
 import SwipeableTicketLine from "../components/SwipeableTicketLine";
+import { updateLinea } from "../api/endpoints";
+import { socket } from "../lib/socket";
 
 /* =======================
    INTERFACES
@@ -28,6 +30,7 @@ interface Linea {
   nombreProducto: string;
   cantidad: number;
   pvp: number;
+  pvpBase: number;
   totalLinea: number;
   estado: string;
   propiedades?: PropiedadLinea[];
@@ -51,14 +54,19 @@ export default function Ticket() {
     null,
   );
 
+  const [pedidoTemporal, setPedidoTemporal] = useState<any[]>([]);
+
   /* =======================
      CARGA
   ======================= */
   async function loadTicket() {
     try {
       const res = await getTicket(ticketId);
-      setLineas(res.lineas || []);
-      console.log(lineas);
+      const ls = res.lineas || [];
+
+      setLineas(ls);
+
+      setPedidoTemporal(ls);
 
       // El total viene dentro del ticket
       setTotal(res.ticket?.totalNeto || res.ticket?.totalBruto || 0);
@@ -79,54 +87,72 @@ export default function Ticket() {
   }
 
   useEffect(() => {
+    // =====================================
+    // CARGA INICIAL
+    // =====================================
+
     loadTicket();
+
     loadCategorias();
+
     loadProductos();
+
+    // =====================================
+    // SOCKETS
+    // =====================================
+
+    function onTicketUpdate(id: number) {
+      if (id === ticketId) {
+        loadTicket();
+      }
+    }
+
+    socket.on("ticket:update", onTicketUpdate);
+
+    // =====================================
+    // CLEANUP
+    // =====================================
+
+    return () => {
+      socket.off("ticket:update", onTicketUpdate);
+    };
   }, [ticketId]);
 
   /* =======================
      ACCIONES
   ======================= */
   async function añadirProducto(p: any, propiedadesSeleccionadas: any[] = []) {
-    try {
-      // PRECIO BASE
-      const precioBase = Number(p.precio);
+    const precioBase = Number(p.precio);
 
-      // SUMAR EXTRAS DE PROPIEDADES
-      const extraProps = propiedadesSeleccionadas.reduce(
-        (acc, prop) => acc + Number(prop.precioDelta || 0),
-        0,
-      );
+    const extraProps = propiedadesSeleccionadas.reduce(
+      (acc, prop) => acc + Number(prop.precioDelta || 0),
+      0,
+    );
 
-      const precioFinal = precioBase + extraProps;
+    const precioFinal = precioBase + extraProps;
 
-      // ENVIAR AL BACKEND
-      await addLinea(ticketId, {
-        productoId: p.id,
-        nombreProducto: p.nombre,
-        cantidad: 1,
-        pvp: precioFinal,
+    const nuevaLinea = {
+      tempId: crypto.randomUUID(),
+      productoId: p.id,
+      nombreProducto: p.nombre,
+      cantidad: 1,
+      pvp: precioFinal,
+      pvpBase: precioBase,
+      totalLinea: precioFinal,
+      estado: "pendiente",
+      propiedades: propiedadesSeleccionadas.map((prop) => ({
+        propiedadId: prop.id,
+        propiedad_nombre: prop.nombre,
+        precioDelta: Number(prop.precioDelta || 0),
+      })),
+    };
 
-        // IDs de propiedades
-        propiedades: propiedadesSeleccionadas.map((p) => ({
-          propiedadId: p.id,
-          texto: null,
-          precioDelta: Number(p.precioDelta || 0),
-        })),
-      });
-
-      await loadTicket();
-    } catch (error: any) {
-      console.error(error);
-
-      alert(error.response?.data?.error || "No se pudo añadir el producto");
-    }
+    setPedidoTemporal((prev) => [...prev, nuevaLinea]);
   }
 
   async function restarLinea(l: Linea) {
     try {
       await decLinea(l.id);
-      await loadTicket();
     } catch (error: any) {
       alert(error.response?.data?.error || "Error al quitar producto");
     }
@@ -138,6 +164,35 @@ export default function Ticket() {
       nav("/mesas");
     } catch (e: any) {
       alert(e.response?.data?.error || "Error al cobrar");
+    }
+  }
+
+  async function enviarPedido() {
+    try {
+      for (const l of pedidoTemporal) {
+        // SOLO enviar líneas nuevas
+        if (l.id) continue;
+
+        await addLinea(ticketId, {
+          productoId: l.productoId,
+          nombreProducto: l.nombreProducto,
+          cantidad: l.cantidad,
+          pvp: l.pvp,
+          pvpBase: l.pvpBase,
+          propiedades:
+            l.propiedades?.map((p: any) => ({
+              propiedadId: p.propiedadId,
+
+              precioDelta: p.precioDelta || 0,
+            })) || [],
+        });
+      }
+
+      await loadTicket();
+    } catch (error) {
+      console.error(error);
+
+      alert("Error enviando pedido");
     }
   }
 
@@ -156,7 +211,7 @@ export default function Ticket() {
       }));
 
       if (!propiedades.length) {
-        añadirProducto(p);
+        await añadirProducto(p);
         return;
       }
 
@@ -170,17 +225,50 @@ export default function Ticket() {
   }
 
   async function editarLinea(linea: Linea) {
-    const propiedades = await getPropiedadesProducto(linea.productoId);
+    try {
+      // =====================================
+      // PROPIEDADES DISPONIBLES DEL PRODUCTO
+      // =====================================
+      const propiedadesRaw = await getPropiedadesProducto(linea.productoId);
 
-    setConfigurandoProducto({
-      linea,
-      producto: {
-        id: linea.productoId,
-        nombre: linea.nombreProducto,
-        precio: linea.pvp,
-      },
-      propiedades,
-    });
+      // =====================================
+      // NORMALIZAR → camelCase
+      // =====================================
+      const propiedades = propiedadesRaw.map((prop: any) => ({
+        id: prop.id,
+        nombre: prop.nombre,
+        precioDelta: Number(prop.precio_delta || 0),
+      }));
+
+      // =====================================
+      // PROPIEDADES YA SELECCIONADAS
+      // =====================================
+      const seleccionadasIniciales =
+        linea.propiedades?.map((p: any) => ({
+          // IMPORTANTE:
+          // el modal usa "id"
+          id: Number(p.propiedad_id ?? p.propiedadId ?? p.id),
+          nombre: p.propiedad_nombre ?? p.propiedadNombre ?? p.nombre,
+          precioDelta: Number(p.precio_delta ?? p.precioDelta ?? 0),
+        })) || [];
+
+      // =====================================
+      // ABRIR MODAL
+      // =====================================
+      setConfigurandoProducto({
+        modo: "editar",
+        linea,
+        producto: {
+          id: linea.productoId,
+          nombre: linea.nombreProducto,
+          precio: linea.pvpBase,
+        },
+        propiedades,
+        seleccionadasIniciales,
+      });
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   return (
@@ -236,7 +324,7 @@ export default function Ticket() {
               {productosFiltrados.map((p) => (
                 <button
                   key={p.id}
-                  onClick={() => añadirProducto(p)}
+                  onClick={() => abrirConfiguradorProducto(p)}
                   className="tpv-product-card"
                 >
                   {/* ICONO / IMAGEN */}
@@ -281,12 +369,12 @@ export default function Ticket() {
             LÍNEAS DEL TICKET
         ================================================= */}
           <div className="tpv-ticket-lines">
-            {lineas.length === 0 && (
+            {pedidoTemporal.length === 0 && (
               <div className="tpv-ticket-empty">No hay productos añadidos</div>
             )}
-            {lineas.map((l) => (
+            {pedidoTemporal.map((l) => (
               <SwipeableTicketLine
-                key={l.id}
+                key={l.id || l.tempId}
                 linea={l}
                 onDelete={() => restarLinea(l)}
                 onEdit={() => editarLinea(l)}
@@ -315,7 +403,9 @@ export default function Ticket() {
             {/* BOTONES */}
             <div className="tpv-actions">
               <button className="tpv-secondary-button">Opciones</button>
-
+              <button onClick={enviarPedido} className="tpv-secondary-button">
+                Enviar
+              </button>
               <button onClick={cobrar} className="tpv-primary-button">
                 Cobrar
               </button>
@@ -327,13 +417,29 @@ export default function Ticket() {
         <ProductConfigurator
           producto={configurandoProducto.producto}
           propiedades={configurandoProducto.propiedades}
+          seleccionadasIniciales={configurandoProducto.seleccionadasIniciales}
           onClose={() => setConfigurandoProducto(null)}
           onConfirm={async (propsSeleccionadas) => {
-            await añadirProducto(
-              configurandoProducto.producto,
-              propsSeleccionadas,
-            );
+            // =====================================
+            // EDITAR
+            // =====================================
+            if (configurandoProducto.modo === "editar") {
+              await updateLinea(configurandoProducto.linea.id, {
+                propiedades: propsSeleccionadas.map((p: any) => ({
+                  propiedadId: p.id,
 
+                  precioDelta: p.precioDelta || 0,
+                })),
+              });
+            } else {
+              // =====================================
+              // CREAR NUEVO
+              // =====================================
+              await añadirProducto(
+                configurandoProducto.producto,
+                propsSeleccionadas,
+              );
+            }
             setConfigurandoProducto(null);
           }}
         />

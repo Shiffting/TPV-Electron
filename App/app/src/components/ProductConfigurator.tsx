@@ -1,31 +1,34 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 import "../styles/product-configurator.css";
 
 interface Props {
   producto: any;
+
   propiedades: any[];
+
+  seleccionadasIniciales?: any[];
 
   onClose: () => void;
 
-  onConfirm: (
-    propiedadesSeleccionadas: any[]
-  ) => void;
+  onConfirm: (propiedadesSeleccionadas: any[]) => void;
 }
 
 export default function ProductConfigurator({
   producto,
   propiedades,
+  seleccionadasIniciales = [],
+
   onClose,
   onConfirm,
 }: Props) {
-
   /* =====================================================
       ESTADO
   ===================================================== */
 
-  const [seleccionadas, setSeleccionadas] =
-    useState<number[]>([]);
+  const [seleccionadas, setSeleccionadas] = useState<any[]>(
+    () => seleccionadasIniciales || [],
+  );
 
   /* =====================================================
       AGRUPAR PROPIEDADES
@@ -45,21 +48,21 @@ export default function ProductConfigurator({
     }
 
     return Array.from(map.entries());
-
   }, [propiedades]);
 
   /* =====================================================
       TOGGLE CHECK
   ===================================================== */
 
-  function togglePropiedad(id: number) {
+  function togglePropiedad(prop: any) {
     setSeleccionadas((prev) => {
+      const exists = prev.some((p) => p.id === prop.id);
 
-      if (prev.includes(id)) {
-        return prev.filter((x) => x !== id);
+      if (exists) {
+        return prev.filter((p) => p.id !== prop.id);
       }
 
-      return [...prev, id];
+      return [...prev, prop];
     });
   }
 
@@ -67,23 +70,17 @@ export default function ProductConfigurator({
       RADIO
   ===================================================== */
 
-  function selectRadio(
-    grupo: string,
-    id: number
-  ) {
-    const delGrupo = propiedades
-      .filter(
-        (p) =>
-          p.grupo === grupo &&
-          p.tipo === "radio"
-      )
+  function selectRadio(grupo: string, propSeleccionada: any) {
+    const idsGrupo = propiedades
+      .filter((p) => p.grupo === grupo && p.tipo === "radio")
       .map((p) => p.id);
 
     setSeleccionadas((prev) => [
-      ...prev.filter(
-        (x) => !delGrupo.includes(x)
-      ),
-      id,
+      // quitar radios del grupo
+      ...prev.filter((p) => !idsGrupo.includes(p.id)),
+
+      // añadir nueva
+      propSeleccionada,
     ]);
   }
 
@@ -92,30 +89,14 @@ export default function ProductConfigurator({
   ===================================================== */
 
   const total = useMemo(() => {
+    let precio = Number(producto.precio);
 
-    let precio =
-      Number(producto.precio);
-
-    for (const id of seleccionadas) {
-
-      const prop = propiedades.find(
-        (p) => p.id === id
-      );
-
-      if (prop) {
-        precio += Number(
-          prop.precioDelta || 0
-        );
-      }
+    for (const prop of seleccionadas) {
+      precio += Number(prop.precioDelta || 0);
     }
 
     return precio;
-
-  }, [
-    seleccionadas,
-    propiedades,
-    producto,
-  ]);
+  }, [seleccionadas, producto]);
 
   /* =====================================================
       RENDER
@@ -123,27 +104,17 @@ export default function ProductConfigurator({
 
   return (
     <div className="pc-overlay">
-
       <div className="pc-modal">
-
         {/* HEADER */}
 
         <div className="pc-header">
-
           <div>
-            <div className="pc-title">
-              {producto.nombre}
-            </div>
+            <div className="pc-title">{producto.nombre}</div>
 
-            <div className="pc-subtitle">
-              Configurar producto
-            </div>
+            <div className="pc-subtitle">Configurar producto</div>
           </div>
 
-          <button
-            className="pc-close"
-            onClick={onClose}
-          >
+          <button className="pc-close" onClick={onClose}>
             ✕
           </button>
         </div>
@@ -151,73 +122,38 @@ export default function ProductConfigurator({
         {/* CONTENIDO */}
 
         <div className="pc-content">
-
           {grupos.map(([grupo, props]) => (
-
-            <div
-              key={grupo}
-              className="pc-group"
-            >
-
-              <div className="pc-group-title">
-                {grupo}
-              </div>
+            <div key={grupo} className="pc-group">
+              <div className="pc-group-title">{grupo}</div>
 
               <div className="pc-options">
-
                 {props.map((p: any) => {
-
-                  const checked =
-                    seleccionadas.includes(
-                      p.id
-                    );
+                  const checked = seleccionadas.some((s) => s.id === p.id);
 
                   return (
                     <button
                       key={p.id}
                       className={`
                         pc-option
-                        ${
-                          checked
-                            ? "selected"
-                            : ""
-                        }
+                        ${checked ? "selected" : ""}
                       `}
                       onClick={() => {
-
-                        if (
-                          p.tipo === "radio"
-                        ) {
-                          selectRadio(
-                            p.grupo,
-                            p.id
-                          );
+                        if (p.tipo === "radio") {
+                          selectRadio(p.grupo, p);
                         } else {
-                          togglePropiedad(
-                            p.id
-                          );
+                          togglePropiedad(p);
                         }
                       }}
                     >
-
                       <div>
-                        <div className="pc-option-name">
-                          {p.nombre}
-                        </div>
+                        <div className="pc-option-name">{p.nombre}</div>
 
-                        {Number(
-                          p.precioDelta
-                        ) > 0 && (
+                        {Number(p.precioDelta) > 0 && (
                           <div className="pc-option-price">
-                            +{
-                              Number(
-                                p.precioDelta
-                              ).toFixed(2)
-                            } €
+                            +{Number(p.precioDelta).toFixed(2)}€
                           </div>
                         )}
                       </div>
-
                     </button>
                   );
                 })}
@@ -229,27 +165,14 @@ export default function ProductConfigurator({
         {/* FOOTER */}
 
         <div className="pc-footer">
-
-          <button
-            className="pc-cancel"
-            onClick={onClose}
-          >
+          <button className="pc-cancel" onClick={onClose}>
             Cancelar
           </button>
 
           <button
             className="pc-confirm"
             onClick={() => {
-
-              const propsFinales =
-                propiedades.filter(
-                  (p) =>
-                    seleccionadas.includes(
-                      p.id
-                    )
-                );
-
-              onConfirm(propsFinales);
+              onConfirm(seleccionadas);
             }}
           >
             Añadir · {total.toFixed(2)} €

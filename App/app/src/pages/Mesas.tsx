@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { getMesas, crearTicket, getTicketAbiertoMesa } from "../api/endpoints";
 import { useNavigate } from "react-router-dom";
 import '../styles/mesas.css';
+import { socket } from "../lib/socket";
 
 export default function Mesas() {
   const [mesas, setMesas] = useState<any[]>([]);
   const nav = useNavigate();
 
   useEffect(() => {
+    socket.on("mesas:update", getMesas);
     getMesas().then(setMesas);
   }, []);
 

@@ -9,11 +9,22 @@ const r = Router();
 
 r.get("/", async (req, res) => {
   const [rows] = await pool.query(
-    `SELECT p.*, c.nombre AS categoria
-     FROM productos p
-     JOIN categorias c ON c.id = p.categoria_id
-     WHERE p.activo = 1
-     ORDER BY c.nombre, p.nombre`,
+    `
+    SELECT
+      p.*,
+      c.nombre AS categoria,
+      e.nombre AS estacion_nombre,
+      e.color AS estacion_color
+    FROM productos p
+
+    JOIN categorias c
+      ON c.id = p.categoria_id
+
+    LEFT JOIN estaciones e
+      ON e.id = p.estacion_id
+
+    WHERE p.activo = 1 ORDER BY c.nombre, p.nombre
+    `,
   );
 
   res.json(rows);

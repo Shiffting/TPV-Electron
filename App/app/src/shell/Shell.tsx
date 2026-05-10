@@ -1,4 +1,4 @@
-import { Outlet, Link, useNavigate } from "react-router-dom";
+import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getToken } from "../state/auth";
 
@@ -33,43 +33,74 @@ export default function Shell() {
         SIDEBAR
     ====================================================== */}
       <aside className="tpv-shell-sidebar">
-        {/* =================================================
-          LOGO
-      ================================================== */}
+        {/* LOGO */}
+
         <div className="tpv-shell-logo">TPV</div>
 
-        {/* =================================================
-          NAVEGACIÓN
-      ================================================== */}
-        <nav className="tpv-shell-nav">
-          {/* DASHBOARD */}
-          <Link to="/" className="tpv-shell-link">
-            <span className="tpv-shell-icon">📊</span>
+        {/* =========================================
+      OPERACIÓN
+  ========================================= */}
 
-            <span className="tpv-shell-label">KPI</span>
-          </Link>
+        <div className="tpv-shell-section">
+          <div className="tpv-shell-section-title">OPERAR</div>
 
-          {/* MESAS */}
-          <Link to="/mesas" className="tpv-shell-link">
-            <span className="tpv-shell-icon">🍽️</span>
+          <nav className="tpv-shell-nav">
+            {/* DASHBOARD */}
 
-            <span className="tpv-shell-label">Mesas</span>
-          </Link>
-        </nav>
+            <NavLink
+              to="/"
+              className={({ isActive }) =>
+                `tpv-shell-link ${isActive ? "active" : ""}`
+              }
+            >
+              <span className="tpv-shell-icon">📊</span>
 
-        {/* =================================================
-          FOOTER SIDEBAR
-      ================================================== */}
-        <div className="mt-auto flex flex-col gap-3">
-          {/* Usuario */}
-          <div className="tpv-shell-user">
-            <div className="tpv-shell-user-avatar">A</div>
+              <span className="tpv-shell-label">KPI</span>
+            </NavLink>
 
-            <div className="tpv-shell-user-info">
-              <div className="tpv-shell-user-name">Admin</div>
+            {/* MESAS */}
 
-              <div className="tpv-shell-user-role">Caja principal</div>
-            </div>
+            <NavLink
+              to="/mesas"
+              className={({ isActive }) =>
+                `tpv-shell-link ${isActive ? "active" : ""}`
+              }
+            >
+              <span className="tpv-shell-icon">🍽️</span>
+
+              <span className="tpv-shell-label">Mesas</span>
+            </NavLink>
+
+            {/* COCINA */}
+
+            <NavLink
+              to="/cocina"
+              className={({ isActive }) =>
+                `tpv-shell-link ${isActive ? "active" : ""}`
+              }
+            >
+              <span className="tpv-shell-icon">👨‍🍳</span>
+
+              <span className="tpv-shell-label">Cocina</span>
+            </NavLink>
+          </nav>
+        </div>
+
+        {/* SPACER */}
+
+        <div style={{ flex: 1 }} />
+
+        {/* =========================================
+      USER
+  ========================================= */}
+
+        <div className="tpv-shell-user">
+          <div className="tpv-shell-user-avatar">A</div>
+
+          <div className="tpv-shell-user-info">
+            <div className="tpv-shell-user-name">Admin</div>
+
+            <div className="tpv-shell-user-role">Caja principal</div>
           </div>
         </div>
       </aside>

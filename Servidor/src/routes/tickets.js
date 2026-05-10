@@ -6,6 +6,7 @@ import {
   PagarParcialSchema,
 } from "../lib/validators.js";
 import { audit } from "../lib/audit.js";
+import { io } from "../app.js";
 
 const r = Router();
 
@@ -53,6 +54,7 @@ r.post("/:ticketId/lineas", async (req, res) => {
     nombreProducto,
     cantidad = 1,
     pvp,
+    pvpBase,
     propiedades = [],
   } = parse.data;
 
@@ -75,10 +77,9 @@ r.post("/:ticketId/lineas", async (req, res) => {
       `SELECT id, cantidad, total_linea
    FROM ticket_lineas
    WHERE ticket_id = ?
-   AND producto_id = ?
    AND config_hash = ?
    AND estado = 'pendiente'`,
-      [ticketId, productoId, configHash],
+      [ticketId, configHash],
     );
 
     let lineaId;
@@ -100,23 +101,25 @@ r.post("/:ticketId/lineas", async (req, res) => {
       const totalLinea = +(cantidad * pvp).toFixed(2);
       const [ins] = await conn.execute(
         `INSERT INTO ticket_lineas 
-   (
-     ticket_id,
-     producto_id,
-     nombre_producto,
-     cantidad,
-     pvp,
-     total_linea,
-     estado,
-     config_hash
-   )
-   VALUES (?, ?, ?, ?, ?, ?, 'pendiente', ?)`,
+  (
+    ticket_id,
+    producto_id,
+    nombre_producto,
+    cantidad,
+    pvp,
+    pvp_base,
+    total_linea,
+    estado,
+    config_hash
+  )
+  VALUES (?, ?, ?, ?, ?, ?, ?, 'pendiente', ?)`,
         [
           ticketId,
           productoId,
           nombreProducto,
           cantidad,
           pvp,
+          pvpBase,
           totalLinea,
           configHash,
         ],
@@ -165,6 +168,10 @@ r.post("/:ticketId/lineas", async (req, res) => {
     }
 
     await conn.commit();
+
+    io.emit("cocina:update");
+    io.emit("mesas:update");
+    io.emit("ticket:update", ticketId);
 
     await audit({
       usuarioId: req.user?.uid || null,
@@ -252,6 +259,9 @@ r.post("/:ticketId/pagar-parcial", async (req, res) => {
     }
 
     await conn.commit();
+    io.emit("mesas:update");
+    io.emit("ticket:update", ticketId);
+    io.emit("dashboard:update");
     await audit({
       usuarioId: req.user?.uid || null,
       accion: "PAGAR_PARCIAL",
@@ -316,6 +326,9 @@ r.post("/:ticketId/cerrar", async (req, res) => {
       );
     }
     await conn.commit();
+    io.emit("mesas:update");
+    io.emit("ticket:update", ticketId);
+    io.emit("dashboard:update");
     await audit({
       usuarioId: req.user?.uid || null,
       accion: "CERRAR_TICKET",
@@ -378,6 +391,7 @@ r.get("/:ticketId", async (req, res) => {
     nombreProducto: l.nombre_producto,
     cantidad: l.cantidad,
     pvp: Number(l.pvp),
+    pvpBase: Number(l.pvp_base),
     totalLinea: Number(l.total_linea),
     estado: l.estado,
     propiedades: propsByLinea[l.id] || [],
@@ -439,10 +453,149 @@ r.post("/lineas/:lineaId/propiedades", async (req, res) => {
     }
 
     await conn.commit();
+    io.emit("mesas:update");
+    io.emit("ticket:update", ticketId);
+    io.emit("dashboard:update");
     res.json({ ok: true, propiedadId: ins.insertId });
   } catch (e) {
     await conn.rollback();
     res.status(500).json({ error: e.message });
+  } finally {
+    conn.release();
+  }
+});
+
+// =========================================
+// EDITAR LÍNEA
+// =========================================
+r.patch("/lineas/:lineaId", async (req, res) => {
+  const lineaId = Number(req.params.lineaId);
+
+  const { propiedades = [] } = req.body;
+
+  const conn = await pool.getConnection();
+
+  try {
+    await conn.beginTransaction();
+
+    // =====================================
+    // LÍNEA ACTUAL
+    // =====================================
+    const [[linea]] = await conn.query(
+      `
+      SELECT *
+      FROM ticket_lineas
+      WHERE id = ?
+      `,
+      [lineaId],
+    );
+
+    if (!linea) {
+      throw new Error("Línea no encontrada");
+    }
+
+    // =====================================
+    // BORRAR PROPIEDADES ACTUALES
+    // =====================================
+    await conn.execute(
+      `
+      DELETE FROM ticket_linea_propiedades
+      WHERE ticket_linea_id = ?
+      `,
+      [lineaId],
+    );
+
+    // =====================================
+    // INSERTAR NUEVAS PROPIEDADES
+    // =====================================
+    for (const prop of propiedades) {
+      await conn.execute(
+        `
+        INSERT INTO ticket_linea_propiedades
+        (
+          ticket_linea_id,
+          propiedad_id,
+          precio_delta
+        )
+        VALUES (?, ?, ?)
+        `,
+        [lineaId, prop.propiedadId, prop.precioDelta || 0],
+      );
+    }
+
+    // =====================================
+    // RECALCULAR PRECIO
+    // =====================================
+    const extras = propiedades.reduce(
+      (acc, p) => acc + Number(p.precioDelta || 0),
+      0,
+    );
+
+    const nuevoPvp = Number(linea.pvp_base || linea.pvp) + extras;
+
+    const nuevoTotal = nuevoPvp * linea.cantidad;
+
+    // =====================================
+    // NUEVO HASH
+    // =====================================
+    const configHash = [
+      linea.producto_id,
+      ...propiedades
+        .map((p) => p.propiedadId)
+        .filter(Boolean)
+        .sort((a, b) => a - b),
+    ].join("|");
+
+    // =====================================
+    // ACTUALIZAR LÍNEA
+    // =====================================
+    await conn.execute(
+      `
+      UPDATE ticket_lineas
+      SET
+        pvp = ?,
+        total_linea = ?,
+        config_hash = ?
+      WHERE id = ?
+      `,
+      [nuevoPvp, nuevoTotal, configHash, lineaId],
+    );
+
+    // =====================================
+    // RECALCULAR TICKET
+    // =====================================
+    await conn.execute(
+      `
+      UPDATE tickets t
+      JOIN (
+        SELECT
+          ticket_id,
+          SUM(total_linea) AS suma
+        FROM ticket_lineas
+        WHERE ticket_id = ?
+          AND estado = 'pendiente'
+      ) x ON x.ticket_id = t.id
+      SET
+        t.total_bruto = x.suma,
+        t.total_neto = x.suma
+      WHERE t.id = ?
+      `,
+      [linea.ticket_id, linea.ticket_id],
+    );
+
+    await conn.commit();
+    io.emit("mesas:update");
+    io.emit("ticket:update", linea.ticket_id);
+    io.emit("dashboard:update");
+    res.json({
+      ok: true,
+    });
+  } catch (e) {
+    await conn.rollback();
+
+    res.status(500).json({
+      error: e.message,
+    });
   } finally {
     conn.release();
   }
@@ -478,6 +631,9 @@ r.post("/lineas/:lineaId/decrementar", async (req, res) => {
     }
 
     await conn.commit();
+    io.emit("cocina:update");
+    io.emit("mesas:update");
+    io.emit("ticket:update", linea.ticket_id);
     res.json({ ok: true });
   } catch (e) {
     await conn.rollback();

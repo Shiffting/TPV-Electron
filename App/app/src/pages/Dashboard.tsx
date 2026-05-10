@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getKpis } from "../api/endpoints";
+import { socket } from "../lib/socket";
 
 import {
   ResponsiveContainer,
@@ -15,6 +16,7 @@ export default function Dashboard() {
   const [k, setK] = useState<any>(null);
 
   useEffect(() => {
+    socket.on("dashboard:update", getKpis);
     getKpis().then(setK);
   }, []);
 
