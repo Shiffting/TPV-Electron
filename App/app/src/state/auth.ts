@@ -1,12 +1,6 @@
 // src/state/auth.ts
 
-const getTPV = () => {
-  if (!window.tpv) {
-    console.warn('⚠️ window.tpv aún no está listo');
-    return null;
-  }
-  return window.tpv;
-};
+const getTPV = () => window.tpv;
 
 export function setBaseURL(url: string) {
   const tpv = getTPV();
@@ -27,21 +21,22 @@ export function getBaseURL(): string {
 
 export function setToken(token: string) {
   const tpv = getTPV();
-  if (tpv) tpv.set('token', token);
+  if (tpv) {
+    tpv.set('token', token);
+    console.log('💾 Token guardado en store');
+  }
 }
 
 export function getToken(): string | null {
   const tpv = getTPV();
-  if (tpv) return tpv.get('token') as string | null;
-  return null;
+  if (!tpv) return null;
+  return tpv.get('token') as string | null;
 }
 
-export function clearToken() {
-  const tpv = getTPV();
-  if (tpv) tpv.clearToken();
-}
-
-// Función útil para saber si ya está listo
 export function isTPVReady(): boolean {
   return !!window.tpv;
+}
+
+export function isAuthenticated(): boolean {
+  return !!getToken();
 }

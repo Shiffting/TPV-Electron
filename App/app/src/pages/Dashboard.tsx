@@ -18,7 +18,7 @@ export default function Dashboard(){
         <h3 className="font-semibold mt-6 mb-2">Top productos (7d)</h3>
         <ul className="list-disc ml-6">
           {k.topProductos.map((p:any)=>(
-            <li key={p.nombre_producto}>{p.nombre_producto} — {p.total.toFixed(2)} € ({p.uds})</li>
+            <li key={p.nombreProducto}>{p.nombreProducto} — {Number(p.total || 0).toFixed(2)} € ({p.uds})</li>
           ))}
         </ul>
       </div>

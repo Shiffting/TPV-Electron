@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getMesas, crearTicket } from '../api/endpoints';
+import { getMesas, crearTicket, getTicketAbiertoMesa } from '../api/endpoints';
 import { useNavigate } from 'react-router-dom';
 
 export default function Mesas(){
@@ -8,10 +8,15 @@ export default function Mesas(){
 
   useEffect(()=>{ getMesas().then(setMesas); },[]);
 
-  const abrir = async (mesaId:number)=>{
-    const { ticketId } = await crearTicket(mesaId);
-    nav(`/ticket/${ticketId}`);
-  };
+const abrir = async (mesaId:number) => {
+  const abierto = await getTicketAbiertoMesa(mesaId);
+  if (abierto.ticketId) {
+    nav(`/ticket/${abierto.ticketId}`);
+    return;
+  }
+  const { ticketId } = await crearTicket(mesaId);
+  nav(`/ticket/${ticketId}`);
+};
 
   return (
     <div>

@@ -6,13 +6,13 @@ const baseURL = getBaseURL();
 
 export const api = axios.create({
   baseURL: baseURL,
-  timeout: 10000,           // ← 10 segundos máximo
+  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   }
 });
 
-// Interceptor para añadir token
+// Interceptor de request (token)
 api.interceptors.request.use((config) => {
   const token = getToken();
   if (token) {
@@ -21,16 +21,14 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Interceptor de respuesta para debug
+// Interceptor de respuesta (debug)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error('❌ API Error:', {
       url: error.config?.url,
-      method: error.config?.method,
       status: error.response?.status,
-      data: error.response?.data,
-      message: error.message,
+      data: error.response?.data
     });
     return Promise.reject(error);
   }

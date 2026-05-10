@@ -30,4 +30,24 @@ r.get('/ocupadas', async (req, res) => {
   res.json(rows);
 });
 
+r.get('/:id/ticket-abierto', async (req, res) => {
+  const mesaId = Number(req.params.id);
+
+  const [[ticket]] = await pool.query(
+    `SELECT id
+     FROM tickets
+     WHERE mesa_id = ?
+       AND estado IN ('abierto', 'parcial')
+     ORDER BY id DESC
+     LIMIT 1`,
+    [mesaId]
+  );
+
+  if (!ticket) {
+    return res.json({ ticketId: null });
+  }
+
+  res.json({ ticketId: ticket.id });
+});
+
 export default r;

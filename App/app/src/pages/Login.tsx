@@ -4,19 +4,21 @@ import { setToken, setBaseURL, getBaseURL, isTPVReady } from '../state/auth';
 import { useNavigate } from 'react-router-dom';
 
 export default function Login() {
+  const nav = useNavigate();
+
   const [username, setU] = useState('admin');
-  const [password, setP] = useState('admin123');
-  const [baseURL, setB] = useState(getBaseURL());
+  const [password, setP] = useState('1234');
+  const [baseURL, setB] = useState<string>(''); // empezamos vacío
   const [err, setErr] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
-  const nav = useNavigate();
 
-  // Esperar a que window.tpv esté completamente listo
+  // Cargar baseURL solo una vez cuando tpv esté listo
   useEffect(() => {
     const init = () => {
       if (isTPVReady()) {
-        setB(getBaseURL());
+        const url = getBaseURL();
+        setB(url);
         setReady(true);
       } else {
         setTimeout(init, 50);
@@ -26,37 +28,33 @@ export default function Login() {
   }, []);
 
   const onSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!ready) {
-    setErr('Esperando inicialización...');
-    return;
-  }
+    e.preventDefault();
+    if (!ready) return;
 
-  setLoading(true);
-  setErr(undefined);
+    setLoading(true);
+    setErr(undefined);
 
-  console.log('🔄 Intentando login con URL:', baseURL);   // ← debug
+    try {
+      // Solo guardamos si cambió
+      if (baseURL !== getBaseURL()) {
+        setBaseURL(baseURL);
+      }
 
-  try {
-    setBaseURL(baseURL);
+      const data = await login(username, password);
+      
+      console.log('✅ Login exitoso');
+      setToken(data.token);           // ya no hace falta await
 
-    const data = await login(username, password);
-    
-    console.log('✅ Login exitoso:', data);   // ← debug
-    setToken(data.token);
-    nav('/');
-  } catch (error: any) {
-    console.error('❌ Login error completo:', error);   // ← debug importante
-    setErr(
-      error?.response?.data?.message ||
-      error?.response?.data?.error ||
-      error?.message ||
-      'No se pudo conectar con el servidor'
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+      console.log('🔄 Navegando a /');
+      nav('/', { replace: true });
+
+    } catch (error: any) {
+      console.error(error);
+      setErr(error?.response?.data?.error || error?.message || 'Error desconocido');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="h-screen grid place-items-center bg-gray-50">
@@ -65,35 +63,35 @@ export default function Login() {
         
         <label className="block text-sm">
           Servidor
-          <input 
-            className="mt-1 w-full border p-2 rounded" 
-            value={baseURL} 
-            onChange={e => setB(e.target.value)} 
+          <input
+            className="mt-1 w-full border p-2 rounded"
+            value={baseURL}
+            onChange={e => setB(e.target.value)}
             disabled={!ready}
           />
         </label>
 
         <label className="block text-sm">Usuario
-          <input 
-            className="mt-1 w-full border p-2 rounded" 
-            value={username} 
-            onChange={e => setU(e.target.value)} 
+          <input
+            className="mt-1 w-full border p-2 rounded"
+            value={username}
+            onChange={e => setU(e.target.value)}
           />
         </label>
 
         <label className="block text-sm">Contraseña
-          <input 
-            type="password" 
-            className="mt-1 w-full border p-2 rounded" 
-            value={password} 
-            onChange={e => setP(e.target.value)} 
+          <input
+            type="password"
+            className="mt-1 w-full border p-2 rounded"
+            value={password}
+            onChange={e => setP(e.target.value)}
           />
         </label>
 
         {err && <div className="text-red-600 text-sm">{err}</div>}
 
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           disabled={loading || !ready}
           className="w-full py-2 rounded bg-black text-white disabled:opacity-50"
         >

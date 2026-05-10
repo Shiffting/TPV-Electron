@@ -9,5 +9,5 @@
     "types": ["node"],
     "skipLibCheck": true
   },
-  "include": ["src", "electron", "types"]
+  "include": ["src", "electron", "types", "../../Servidor/src/routes/test.js"]
 }

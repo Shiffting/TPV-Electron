@@ -23,3 +23,33 @@ export async function cajaAbrir(efectivoInicial=0){ const { data } = await api.p
 export async function cajaMovimiento(payload: any){ const { data } = await api.post('/caja/movimiento', payload); return data; }
 export async function cajaAbierta(){ const { data } = await api.get('/caja/abierta'); return data; }
 export async function cajaCerrar(payload: any){ const { data } = await api.post('/caja/cerrar', payload); return data; }
+
+// Categorías
+export async function getCategorias(){
+  const { data } = await api.get('/categorias');
+  return data;
+}
+
+// Productos
+export async function getProductos(){
+  const { data } = await api.get('/productos');
+  return data;
+}
+
+// Restar unidad de línea
+export async function decLinea(lineaId: number){
+  const { data } = await api.post(`/tickets/lineas/${lineaId}/decrementar`);
+  return data;
+}
+
+//Ticket Mesa Abierta
+export const getTicketAbiertoMesa = async (mesaId:number) => {
+  const { data } = await api.get(`/mesas/${mesaId}/ticket-abierto`);
+  return data;
+};
+
+//Cobrar y cerrar ticket
+export async function cerrarTicket(ticketId:number){
+  const { data } = await api.post(`/tickets/${ticketId}/cerrar`);
+  return data;
+}
