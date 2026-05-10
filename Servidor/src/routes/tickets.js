@@ -55,6 +55,15 @@ r.post("/:ticketId/lineas", async (req, res) => {
     pvp,
     propiedades = [],
   } = parse.data;
+
+  const configHash = [
+    productoId,
+    ...propiedades
+      .map((p) => p.propiedadId)
+      .filter(Boolean)
+      .sort((a, b) => a - b),
+  ].join("|");
+
   const ticketId = Number(req.params.ticketId);
 
   const conn = await pool.getConnection();
@@ -63,10 +72,13 @@ r.post("/:ticketId/lineas", async (req, res) => {
 
     // 1. Buscar si el producto ya existe en el ticket (pendiente)
     const [[existing]] = await conn.query(
-      `SELECT id, cantidad, total_linea 
-             FROM ticket_lineas 
-             WHERE ticket_id = ? AND producto_id = ? AND estado = 'pendiente'`,
-      [ticketId, productoId],
+      `SELECT id, cantidad, total_linea
+   FROM ticket_lineas
+   WHERE ticket_id = ?
+   AND producto_id = ?
+   AND config_hash = ?
+   AND estado = 'pendiente'`,
+      [ticketId, productoId, configHash],
     );
 
     let lineaId;
@@ -88,9 +100,26 @@ r.post("/:ticketId/lineas", async (req, res) => {
       const totalLinea = +(cantidad * pvp).toFixed(2);
       const [ins] = await conn.execute(
         `INSERT INTO ticket_lineas 
-                 (ticket_id, producto_id, nombre_producto, cantidad, pvp, total_linea, estado)
-                 VALUES (?, ?, ?, ?, ?, ?, 'pendiente')`,
-        [ticketId, productoId, nombreProducto, cantidad, pvp, totalLinea],
+   (
+     ticket_id,
+     producto_id,
+     nombre_producto,
+     cantidad,
+     pvp,
+     total_linea,
+     estado,
+     config_hash
+   )
+   VALUES (?, ?, ?, ?, ?, ?, 'pendiente', ?)`,
+        [
+          ticketId,
+          productoId,
+          nombreProducto,
+          cantidad,
+          pvp,
+          totalLinea,
+          configHash,
+        ],
       );
       lineaId = ins.insertId;
 
@@ -98,14 +127,9 @@ r.post("/:ticketId/lineas", async (req, res) => {
       for (const prop of propiedades) {
         await conn.execute(
           `INSERT INTO ticket_linea_propiedades 
-                     (ticket_linea_id, propiedad_id, texto_libre, precio_delta)
-                     VALUES (?, ?, ?, ?)`,
-          [
-            lineaId,
-            prop.propiedadId ?? null,
-            prop.texto ?? null,
-            prop.precioDelta ?? 0,
-          ],
+              (ticket_linea_id, propiedad_id, precio_delta)
+              VALUES (?, ?, ?)`,
+          [lineaId, prop.propiedadId ?? null, prop.precioDelta ?? 0],
         );
       }
     }

@@ -1,6 +1,6 @@
-import { Outlet, Link, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { getToken } from '../state/auth';
+import { Outlet, Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { getToken } from "../state/auth";
 
 export default function Shell() {
   const nav = useNavigate();
@@ -8,13 +8,13 @@ export default function Shell() {
 
   useEffect(() => {
     const token = getToken();
-    console.log('Shell check token:', !!token);
+    console.log("Shell check token:", !!token);
 
     if (!token) {
-      console.log('❌ No token → redirigiendo a /login');
-      nav('/login', { replace: true });
+      console.log("❌ No token → redirigiendo a /login");
+      nav("/login", { replace: true });
     } else {
-      console.log('✅ Token válido → mostrando Shell');
+      console.log("✅ Token válido → mostrando Shell");
       setReady(true);
     }
   }, [nav]);
@@ -28,16 +28,63 @@ export default function Shell() {
   }
 
   return (
-    <div className="h-screen flex">
-      <aside className="w-64 bg-zinc-800 p-4 border-r border-zinc-700">
-        <h1 className="text-2xl font-bold mb-6">TPV</h1>
-        <nav className="space-y-2">
-          <Link to="/" className="block px-4 py-2 rounded hover:bg-zinc-700">Dashboard</Link>
-          <Link to="/mesas" className="block px-4 py-2 rounded hover:bg-zinc-700">Mesas</Link>
+    <div className="h-screen w-screen flex overflow-hidden bg-[#f4f6fb]">
+      {/* =====================================================
+        SIDEBAR
+    ====================================================== */}
+      <aside className="tpv-shell-sidebar">
+        {/* =================================================
+          LOGO
+      ================================================== */}
+        <div className="tpv-shell-logo">TPV</div>
+
+        {/* =================================================
+          NAVEGACIÓN
+      ================================================== */}
+        <nav className="tpv-shell-nav">
+          {/* DASHBOARD */}
+          <Link to="/" className="tpv-shell-link">
+            <span className="tpv-shell-icon">📊</span>
+
+            <span className="tpv-shell-label">KPI</span>
+          </Link>
+
+          {/* MESAS */}
+          <Link to="/mesas" className="tpv-shell-link">
+            <span className="tpv-shell-icon">🍽️</span>
+
+            <span className="tpv-shell-label">Mesas</span>
+          </Link>
         </nav>
+
+        {/* =================================================
+          FOOTER SIDEBAR
+      ================================================== */}
+        <div className="mt-auto flex flex-col gap-3">
+          {/* Usuario */}
+          <div className="tpv-shell-user">
+            <div className="tpv-shell-user-avatar">A</div>
+
+            <div className="tpv-shell-user-info">
+              <div className="tpv-shell-user-name">Admin</div>
+
+              <div className="tpv-shell-user-role">Caja principal</div>
+            </div>
+          </div>
+        </div>
       </aside>
 
-      <main className="flex-1 overflow-auto bg-zinc-900 p-6">
+      {/* =====================================================
+        CONTENIDO PRINCIPAL
+    ====================================================== */}
+      <main
+        className="
+    flex-1
+    overflow-hidden
+    bg-[#f4f5f8]
+    p-5
+  "
+      >
         <Outlet />
       </main>
     </div>

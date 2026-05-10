@@ -53,3 +53,14 @@ export async function cerrarTicket(ticketId:number){
   const { data } = await api.post(`/tickets/${ticketId}/cerrar`);
   return data;
 }
+
+//Conseguir las propiedades de un producto
+export async function getPropiedadesProducto(
+  productoId: number
+) {
+  const { data } = await api.get(
+    `/productos/${productoId}/propiedades`
+  );
+
+  return data;
+}

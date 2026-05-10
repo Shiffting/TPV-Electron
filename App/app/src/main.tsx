@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import './index.css';
+import './styles/index.css'
 import Login from './pages/Login';
 import Mesas from './pages/Mesas';
 import Ticket from './pages/Ticket';

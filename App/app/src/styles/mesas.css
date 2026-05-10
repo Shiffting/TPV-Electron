@@ -1,0 +1,178 @@
+/* =========================================================
+   PÁGINA
+========================================================= */
+
+.mesas-page {
+  height: 100%;
+
+  padding: 22px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   FILTROS
+========================================================= */
+
+.mesas-filters {
+    display: flex;
+
+    gap: 10px;
+
+    margin-top: 18px;
+    margin-bottom: 24px;
+}
+
+.mesas-filter {
+    height: 42px;
+
+    padding: 0 18px;
+
+    border: none;
+
+    border-radius: 14px;
+
+    background: white;
+
+    color: #4b5563;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: 0.15s;
+
+    box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.mesas-filter:hover {
+    background: #f3f4f6;
+}
+
+.mesas-filter.active {
+    background: linear-gradient(135deg,
+            #8b5cf6,
+            #6d28d9);
+
+    color: white;
+}
+
+/* =========================================================
+   GRID
+========================================================= */
+
+.mesas-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fill, minmax(180px, 220px));
+
+    gap: 18px;
+
+    align-content: start;
+    align-items: start;
+
+    padding-bottom: 20px;
+}
+
+/* =========================================================
+   CARD MESA
+========================================================= */
+
+.mesa-card {
+    min-height: 160px;
+
+    background: white;
+
+    border: 1px solid #e5e7eb;
+
+    border-radius: 28px;
+
+    padding: 22px;
+
+    text-align: left;
+
+    cursor: pointer;
+
+    transition: 0.15s;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+    box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.mesa-card:hover {
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+/* =========================================================
+   TÍTULO
+========================================================= */
+
+.mesa-title {
+    font-size: 34px;
+
+    font-weight: 700;
+
+    color: #111827;
+}
+
+/* =========================================================
+   ESTADO
+========================================================= */
+
+.mesa-status {
+    font-size: 15px;
+
+    font-weight: 600;
+
+    text-transform: capitalize;
+}
+
+.mesa-status.libre {
+    color: #16a34a;
+}
+
+.mesa-status.ocupada {
+    color: #ea580c;
+}
+
+.mesa-status.pendiente {
+    color: #ca8a04;
+}
+
+/* =========================================================
+   INFO
+========================================================= */
+
+.mesa-info {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: end;
+
+    font-size: 14px;
+
+    color: #6b7280;
+}
+
+.mesa-total {
+    font-size: 22px;
+
+    font-weight: 700;
+
+    color: #111827;
+}

@@ -7,16 +7,30 @@ import {
   getCategorias,
   getProductos,
   cerrarTicket,
+  getPropiedadesProducto,
 } from "../api/endpoints";
+import "../styles/index.css";
+import ProductConfigurator from "../components/ProductConfigurator";
+import SwipeableTicketLine from "../components/SwipeableTicketLine";
 
 /* =======================
-   TIPOS
+   INTERFACES
 ======================= */
+interface PropiedadLinea {
+  propiedad_nombre?: string;
+  precioDelta?: number;
+}
+
 interface Linea {
   id: number;
+  ticketId: number;
+  productoId: number;
   nombreProducto: string;
   cantidad: number;
+  pvp: number;
   totalLinea: number;
+  estado: string;
+  propiedades?: PropiedadLinea[];
 }
 
 /* =======================
@@ -33,6 +47,9 @@ export default function Ticket() {
   const [categorias, setCategorias] = useState<any[]>([]);
   const [productos, setProductos] = useState<any[]>([]);
   const [categoriaActiva, setCategoriaActiva] = useState<number | null>(null);
+  const [configurandoProducto, setConfigurandoProducto] = useState<any | null>(
+    null,
+  );
 
   /* =======================
      CARGA
@@ -40,8 +57,8 @@ export default function Ticket() {
   async function loadTicket() {
     try {
       const res = await getTicket(ticketId);
-      console.log(res);
       setLineas(res.lineas || []);
+      console.log(lineas);
 
       // El total viene dentro del ticket
       setTotal(res.ticket?.totalNeto || res.ticket?.totalBruto || 0);
@@ -70,18 +87,38 @@ export default function Ticket() {
   /* =======================
      ACCIONES
   ======================= */
-  async function añadirProducto(p: any) {
+  async function añadirProducto(p: any, propiedadesSeleccionadas: any[] = []) {
     try {
+      // PRECIO BASE
+      const precioBase = Number(p.precio);
+
+      // SUMAR EXTRAS DE PROPIEDADES
+      const extraProps = propiedadesSeleccionadas.reduce(
+        (acc, prop) => acc + Number(prop.precioDelta || 0),
+        0,
+      );
+
+      const precioFinal = precioBase + extraProps;
+
+      // ENVIAR AL BACKEND
       await addLinea(ticketId, {
         productoId: p.id,
         nombreProducto: p.nombre,
         cantidad: 1,
-        pvp: Number(p.precio),
-        propiedades: [],
+        pvp: precioFinal,
+
+        // IDs de propiedades
+        propiedades: propiedadesSeleccionadas.map((p) => ({
+          propiedadId: p.id,
+          texto: null,
+          precioDelta: Number(p.precioDelta || 0),
+        })),
       });
+
       await loadTicket();
     } catch (error: any) {
       console.error(error);
+
       alert(error.response?.data?.error || "No se pudo añadir el producto");
     }
   }
@@ -108,76 +145,199 @@ export default function Ticket() {
     (p) => p.categoria_id === categoriaActiva,
   );
 
+  async function abrirConfiguradorProducto(p: any) {
+    try {
+      const propiedadesRaw = await getPropiedadesProducto(p.id);
+
+      const propiedades = propiedadesRaw.map((prop: any) => ({
+        id: prop.id,
+        nombre: prop.nombre,
+        precioDelta: Number(prop.precio_delta || 0),
+      }));
+
+      if (!propiedades.length) {
+        añadirProducto(p);
+        return;
+      }
+
+      setConfigurandoProducto({
+        producto: p,
+        propiedades,
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async function editarLinea(linea: Linea) {
+    const propiedades = await getPropiedadesProducto(linea.productoId);
+
+    setConfigurandoProducto({
+      linea,
+      producto: {
+        id: linea.productoId,
+        nombre: linea.nombreProducto,
+        precio: linea.pvp,
+      },
+      propiedades,
+    });
+  }
+
   return (
-    <div className="h-screen flex flex-col bg-zinc-900 text-white">
-      {/* HEADER */}
-      <div className="p-3 border-b border-zinc-700 flex justify-between">
-        <div>Ticket #{ticketId}</div>
-        <button onClick={() => nav("/mesas")}>Volver</button>
-      </div>
+    <div className="ticket-page">
+      {/* =========================================================
+        HEADER SUPERIOR
+    ========================================================== */}
+      <header className="tpv-header">
+        <div className="tpv-header-left">
+          <div className="tpv-page-title">Mesa</div>
 
-      {/* CONTENIDO */}
-      <div className="flex flex-1">
-        {/* CATEGORÍAS */}
-        <div className="w-1/4 bg-zinc-800 p-2 overflow-y-auto">
-          {categorias.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => setCategoriaActiva(c.id)}
-              className={`w-full text-left px-3 py-2 mb-2 rounded ${
-                categoriaActiva === c.id ? "bg-blue-600" : "bg-zinc-700"
-              }`}
-            >
-              {c.nombre}
-            </button>
-          ))}
+          <div className="tpv-ticket-badge">Ticket #{ticketId}</div>
         </div>
 
-        {/* PRODUCTOS */}
-        <div className="w-3/4 bg-zinc-700 p-2 grid grid-cols-3 gap-2 overflow-y-auto">
-          {productosFiltrados.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => añadirProducto(p)}
-              className="bg-zinc-600 p-3 rounded hover:bg-zinc-500"
-            >
-              <div>{p.nombre}</div>
-              <div className="text-sm">{p.precio} €</div>
-            </button>
-          ))}
-        </div>
-      </div>
+        <button onClick={() => nav("/mesas")} className="tpv-back-button">
+          Volver
+        </button>
+      </header>
 
-      {/* TICKET */}
-      <div className="h-1/3 bg-zinc-800 p-3 overflow-y-auto">
-        {lineas.map((l) => (
-          <div
-            key={l.id}
-            className="flex justify-between mb-2 bg-zinc-700 p-3 rounded cursor-pointer hover:bg-red-900/30"
-            onClick={() => restarLinea(l)}
-          >
-            <div>
-              {l.nombreProducto} × {l.cantidad}
+      {/* =========================================================
+        CONTENIDO PRINCIPAL
+    ========================================================== */}
+      <div className="tpv-content">
+        {/* =====================================================
+          COLUMNA IZQUIERDA
+          Categorías + Productos
+      ====================================================== */}
+        <section className="tpv-products-section">
+          {/* ================================================
+            CATEGORÍAS
+        ================================================= */}
+          <aside className="tpv-categories-panel">
+            <div className="tpv-categories-scroll">
+              {categorias.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setCategoriaActiva(c.id)}
+                  className={`tpv-category-button ${
+                    categoriaActiva === c.id ? "active" : ""
+                  }`}
+                >
+                  {c.nombre}
+                </button>
+              ))}
             </div>
-            <div>{Number(l.totalLinea).toFixed(2)} €</div>
-          </div>
-        ))}
-      </div>
+          </aside>
 
-      {/* FOOTER */}
-      <div className="p-3 border-t border-zinc-700 flex justify-between items-center">
-        <div className="text-xl font-bold">
-          Total: {Number(total).toFixed(2)} €
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={cobrar}
-            className="bg-green-600 px-6 py-3 rounded font-medium"
-          >
-            Cobrar
-          </button>
-        </div>
+          {/* ================================================
+            PRODUCTOS
+        ================================================= */}
+          <div className="tpv-products-panel">
+            <div className="tpv-products-grid">
+              {productosFiltrados.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => añadirProducto(p)}
+                  className="tpv-product-card"
+                >
+                  {/* ICONO / IMAGEN */}
+                  <div className="tpv-product-image">IMG</div>
+
+                  {/* INFO */}
+                  <div className="tpv-product-info">
+                    <div className="tpv-product-name">{p.nombre}</div>
+
+                    <div className="tpv-product-category">ID {p.id}</div>
+                  </div>
+
+                  {/* PRECIO */}
+                  <div className="tpv-product-price">
+                    {Number(p.precio).toFixed(2)} €
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* =====================================================
+          PANEL DERECHO
+          TICKET
+      ====================================================== */}
+        <aside className="tpv-ticket-panel">
+          {/* ================================================
+            HEADER TICKET
+        ================================================= */}
+          <div className="tpv-ticket-header">
+            <div>
+              <div className="tpv-ticket-title">Ticket #{ticketId}</div>
+
+              <div className="tpv-ticket-subtitle">Mesa activa</div>
+            </div>
+
+            <div className="tpv-ticket-status">ABIERTO</div>
+          </div>
+
+          {/* ================================================
+            LÍNEAS DEL TICKET
+        ================================================= */}
+          <div className="tpv-ticket-lines">
+            {lineas.length === 0 && (
+              <div className="tpv-ticket-empty">No hay productos añadidos</div>
+            )}
+            {lineas.map((l) => (
+              <SwipeableTicketLine
+                key={l.id}
+                linea={l}
+                onDelete={() => restarLinea(l)}
+                onEdit={() => editarLinea(l)}
+              />
+            ))}
+          </div>
+
+          {/* ================================================
+            FOOTER TICKET
+        ================================================= */}
+          <div className="tpv-ticket-footer">
+            {/* RESUMEN */}
+            <div className="tpv-summary">
+              <div className="tpv-summary-row">
+                <span>Productos</span>
+                <span>{lineas.length}</span>
+              </div>
+
+              <div className="tpv-summary-total">
+                <span>Total</span>
+
+                <span>{Number(total).toFixed(2)} €</span>
+              </div>
+            </div>
+
+            {/* BOTONES */}
+            <div className="tpv-actions">
+              <button className="tpv-secondary-button">Opciones</button>
+
+              <button onClick={cobrar} className="tpv-primary-button">
+                Cobrar
+              </button>
+            </div>
+          </div>
+        </aside>
       </div>
+      {configurandoProducto && (
+        <ProductConfigurator
+          producto={configurandoProducto.producto}
+          propiedades={configurandoProducto.propiedades}
+          onClose={() => setConfigurandoProducto(null)}
+          onConfirm={async (propsSeleccionadas) => {
+            await añadirProducto(
+              configurandoProducto.producto,
+              propsSeleccionadas,
+            );
+
+            setConfigurandoProducto(null);
+          }}
+        />
+      )}
     </div>
   );
 }
