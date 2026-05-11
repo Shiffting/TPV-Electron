@@ -8,11 +8,13 @@ import {
   getProductos,
   cerrarTicket,
   getPropiedadesProducto,
+  updateLinea,
+  unlockMesa,
+  pingMesaLock,
 } from "../api/endpoints";
-import "../styles/index.css";
+import "../styles/ticket.css";
 import ProductConfigurator from "../components/ProductConfigurator";
 import SwipeableTicketLine from "../components/SwipeableTicketLine";
-import { updateLinea } from "../api/endpoints";
 import { socket } from "../lib/socket";
 
 /* =======================
@@ -46,6 +48,7 @@ export default function Ticket() {
 
   const [lineas, setLineas] = useState<Linea[]>([]);
   const [total, setTotal] = useState(0);
+  const [mesaId, setMesaId] = useState<number | null>(null);
 
   const [categorias, setCategorias] = useState<any[]>([]);
   const [productos, setProductos] = useState<any[]>([]);
@@ -65,6 +68,7 @@ export default function Ticket() {
       const ls = res.lineas || [];
 
       setLineas(ls);
+      setMesaId(res.ticket?.mesaId || null);
 
       setPedidoTemporal(ls);
 
@@ -98,6 +102,18 @@ export default function Ticket() {
     loadProductos();
 
     // =====================================
+    // LOCK PING
+    // =====================================
+
+    let interval: any = null;
+
+    if (mesaId) {
+      interval = setInterval(() => {
+        pingMesaLock(mesaId);
+      }, 30000);
+    }
+
+    // =====================================
     // SOCKETS
     // =====================================
 
@@ -114,9 +130,17 @@ export default function Ticket() {
     // =====================================
 
     return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+
+      if (mesaId) {
+        unlockMesa(mesaId);
+      }
+
       socket.off("ticket:update", onTicketUpdate);
     };
-  }, [ticketId]);
+  }, [ticketId, mesaId]);
 
   /* =======================
      ACCIONES
@@ -161,7 +185,7 @@ export default function Ticket() {
   async function cobrar() {
     try {
       await cerrarTicket(ticketId);
-      nav("/mesas");
+      nav("/app/mesas");
     } catch (e: any) {
       alert(e.response?.data?.error || "Error al cobrar");
     }
@@ -189,6 +213,7 @@ export default function Ticket() {
       }
 
       await loadTicket();
+      nav("/app/mesas");
     } catch (error) {
       console.error(error);
 
@@ -283,7 +308,20 @@ export default function Ticket() {
           <div className="tpv-ticket-badge">Ticket #{ticketId}</div>
         </div>
 
-        <button onClick={() => nav("/mesas")} className="tpv-back-button">
+        <button
+          onClick={async () => {
+            try {
+              if (mesaId) {
+                await unlockMesa(mesaId);
+              }
+            } catch (e) {
+              console.error(e);
+            }
+
+            nav("/app/mesas");
+          }}
+          className="tpv-back-button"
+        >
           Volver
         </button>
       </header>
@@ -390,13 +428,18 @@ export default function Ticket() {
             <div className="tpv-summary">
               <div className="tpv-summary-row">
                 <span>Productos</span>
-                <span>{lineas.length}</span>
+                <span>{pedidoTemporal.length}</span>
               </div>
 
               <div className="tpv-summary-total">
                 <span>Total</span>
 
-                <span>{Number(total).toFixed(2)} €</span>
+                <span>
+                  {pedidoTemporal
+                    .reduce((acc, l) => acc + Number(l.totalLinea || 0), 0)
+                    .toFixed(2)}{" "}
+                  €
+                </span>
               </div>
             </div>
 

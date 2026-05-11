@@ -1,23 +1,26 @@
 import { useEffect, useState } from "react";
 import { getKpis } from "../api/endpoints";
 import { socket } from "../lib/socket";
+import PinModal from "../components/PinModal";
+import { getOperator, setOperator } from "../state/operator";
+import { loginPIN } from "../api/endpoints";
 
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  Tooltip,
-} from "recharts";
+import { ResponsiveContainer, LineChart, Line, XAxis, Tooltip } from "recharts";
 
 import "../styles/dashboard.css";
 
 export default function Dashboard() {
   const [k, setK] = useState<any>(null);
+  const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
-    socket.on("dashboard:update", getKpis);
     getKpis().then(setK);
+
+    const interval = setInterval(() => {
+      getKpis().then(setK);
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
   if (!k) return null;
@@ -33,6 +36,26 @@ export default function Dashboard() {
     { dia: "Dom", ventas: 1260 },
   ];
 
+  if (!allowed) {
+    return (
+      <PinModal
+        title="PIN manager"
+        onClose={() => window.history.back()}
+        onSubmit={async (pin) => {
+          const data = await loginPIN(pin);
+
+          if (!["manager", "admin"].includes(data.user.rol)) {
+            throw new Error("Sin permisos");
+          }
+
+          setOperator(data.user);
+
+          setAllowed(true);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="dashboard-page">
       {/* =====================================================
@@ -42,9 +65,7 @@ export default function Dashboard() {
         <div>
           <div className="dashboard-title">Dashboard</div>
 
-          <div className="dashboard-subtitle">
-            Resumen general del local
-          </div>
+          <div className="dashboard-subtitle">Resumen general del local</div>
         </div>
       </header>
 
@@ -52,25 +73,16 @@ export default function Dashboard() {
           KPIs
       ===================================================== */}
       <section className="dashboard-kpis">
-        <KpiCard
-          title="Ventas hoy"
-          value={k.hoy.ventas.toFixed(2) + " €"}
-        />
+        <KpiCard title="Ventas hoy" value={k.hoy.ventas.toFixed(2) + " €"} />
 
-        <KpiCard
-          title="Tickets hoy"
-          value={k.hoy.tickets}
-        />
+        <KpiCard title="Tickets hoy" value={k.hoy.tickets} />
 
         <KpiCard
           title="Ticket medio"
           value={k.hoy.ticketMedio.toFixed(2) + " €"}
         />
 
-        <KpiCard
-          title="Mesas ocupadas"
-          value="8 / 14"
-        />
+        <KpiCard title="Mesas ocupadas" value="8 / 14" />
       </section>
 
       {/* =====================================================
@@ -83,24 +95,16 @@ export default function Dashboard() {
         <div className="dashboard-card dashboard-chart-card">
           <div className="dashboard-card-header">
             <div>
-              <div className="dashboard-card-title">
-                Ventas semanales
-              </div>
+              <div className="dashboard-card-title">Ventas semanales</div>
 
-              <div className="dashboard-card-subtitle">
-                Últimos 7 días
-              </div>
+              <div className="dashboard-card-subtitle">Últimos 7 días</div>
             </div>
           </div>
 
           <div className="dashboard-chart">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={ventasSemana}>
-                <XAxis
-                  dataKey="dia"
-                  axisLine={false}
-                  tickLine={false}
-                />
+                <XAxis dataKey="dia" axisLine={false} tickLine={false} />
 
                 <Tooltip />
 
@@ -121,46 +125,25 @@ export default function Dashboard() {
         =============================================== */}
         <div className="dashboard-side-column">
           <div className="dashboard-card">
-            <div className="dashboard-card-title">
-              Estado del local
-            </div>
+            <div className="dashboard-card-title">Estado del local</div>
 
             <div className="dashboard-status-list">
-              <StatusItem
-                label="Mesas pendientes"
-                value="3"
-              />
+              <StatusItem label="Mesas pendientes" value="3" />
 
-              <StatusItem
-                label="Cocina"
-                value="Activa"
-                success
-              />
+              <StatusItem label="Cocina" value="Activa" success />
 
-              <StatusItem
-                label="Barra"
-                value="2 comandas"
-              />
+              <StatusItem label="Barra" value="2 comandas" />
 
-              <StatusItem
-                label="Tickets abiertos"
-                value="12"
-              />
+              <StatusItem label="Tickets abiertos" value="12" />
             </div>
           </div>
 
           <div className="dashboard-card">
-            <div className="dashboard-card-title">
-              Hora punta
-            </div>
+            <div className="dashboard-card-title">Hora punta</div>
 
-            <div className="dashboard-big-stat">
-              21:00 - 22:00
-            </div>
+            <div className="dashboard-big-stat">21:00 - 22:00</div>
 
-            <div className="dashboard-muted">
-              Mayor volumen de ventas
-            </div>
+            <div className="dashboard-muted">Mayor volumen de ventas</div>
           </div>
         </div>
       </section>
@@ -171,30 +154,19 @@ export default function Dashboard() {
       <section className="dashboard-card">
         <div className="dashboard-card-header">
           <div>
-            <div className="dashboard-card-title">
-              Top productos
-            </div>
+            <div className="dashboard-card-title">Top productos</div>
 
-            <div className="dashboard-card-subtitle">
-              Últimos 7 días
-            </div>
+            <div className="dashboard-card-subtitle">Últimos 7 días</div>
           </div>
         </div>
 
         <div className="dashboard-products">
           {k.topProductos.map((p: any) => (
-            <div
-              key={p.nombreProducto}
-              className="dashboard-product-row"
-            >
+            <div key={p.nombreProducto} className="dashboard-product-row">
               <div>
-                <div className="dashboard-product-name">
-                  {p.nombreProducto}
-                </div>
+                <div className="dashboard-product-name">{p.nombreProducto}</div>
 
-                <div className="dashboard-product-units">
-                  {p.uds} uds
-                </div>
+                <div className="dashboard-product-units">{p.uds} uds</div>
               </div>
 
               <div className="dashboard-product-total">
@@ -212,22 +184,12 @@ export default function Dashboard() {
     KPI CARD
 ========================================================= */
 
-function KpiCard({
-  title,
-  value,
-}: {
-  title: string;
-  value: any;
-}) {
+function KpiCard({ title, value }: { title: string; value: any }) {
   return (
     <div className="dashboard-kpi-card">
-      <div className="dashboard-kpi-title">
-        {title}
-      </div>
+      <div className="dashboard-kpi-title">{title}</div>
 
-      <div className="dashboard-kpi-value">
-        {value}
-      </div>
+      <div className="dashboard-kpi-value">{value}</div>
     </div>
   );
 }
@@ -249,15 +211,7 @@ function StatusItem({
     <div className="dashboard-status-item">
       <span>{label}</span>
 
-      <span
-        className={
-          success
-            ? "dashboard-status-success"
-            : ""
-        }
-      >
-        {value}
-      </span>
+      <span className={success ? "dashboard-status-success" : ""}>{value}</span>
     </div>
   );
 }

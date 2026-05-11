@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { pool } from '../db/pool.js';
-import { authMiddleware, requireRole } from '../lib/auth.js';
+import { authMiddleware } from '../lib/auth.js';
+import {requireRole} from '../lib/requireRole.js'
 
 const r = Router();
 r.use(authMiddleware, requireRole('admin','caja'));

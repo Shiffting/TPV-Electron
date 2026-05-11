@@ -24,11 +24,6 @@ r.post("/", async (req, res) => {
       [mesaId],
     );
     const ticketId = ins.insertId;
-    if (mesaId) {
-      await conn.execute('UPDATE mesas SET estado="ocupada" WHERE id=?', [
-        mesaId,
-      ]);
-    }
     await conn.commit();
     await audit({
       usuarioId: req.user?.uid || null,
@@ -150,23 +145,6 @@ r.post("/:ticketId/lineas", async (req, res) => {
       [ticketId, ticketId],
     );
 
-    // 3. Actualizar mesa
-    const [[tk]] = await conn.query("SELECT mesa_id FROM tickets WHERE id=?", [
-      ticketId,
-    ]);
-    if (tk?.mesa_id) {
-      await conn.execute(
-        `UPDATE mesas 
-                 SET items_pendientes = (
-                    SELECT COUNT(*) FROM ticket_lineas 
-                    WHERE ticket_id = ? AND estado = 'pendiente'
-                 ), 
-                 estado = 'ocupada' 
-                 WHERE id = ?`,
-        [ticketId, tk.mesa_id],
-      );
-    }
-
     await conn.commit();
 
     io.emit("cocina:update");
@@ -242,22 +220,6 @@ r.post("/:ticketId/pagar-parcial", async (req, res) => {
       ],
     );
 
-    // Actualizar mesa si aplica
-    const [[tk]] = await conn.query("SELECT mesa_id FROM tickets WHERE id=?", [
-      ticketId,
-    ]);
-    if (tk?.mesa_id) {
-      await conn.execute(
-        `UPDATE mesas SET items_pendientes=?, estado=?
-         WHERE id=?`,
-        [
-          Number(pend.pendiente) === 0 ? 0 : upd.affectedRows,
-          Number(pend.pendiente) === 0 ? "libre" : "ocupada",
-          tk.mesa_id,
-        ],
-      );
-    }
-
     await conn.commit();
     io.emit("mesas:update");
     io.emit("ticket:update", ticketId);
@@ -315,20 +277,12 @@ r.post("/:ticketId/cerrar", async (req, res) => {
       [ticketId],
     );
 
-    //Cogemos la mesa y la dejamos libre
-    const [[tk]] = await conn.query("SELECT mesa_id FROM tickets WHERE id=?", [
-      ticketId,
-    ]);
-    if (tk?.mesa_id) {
-      await conn.execute(
-        `UPDATE mesas SET estado='libre', items_pendientes=0 WHERE id=?`,
-        [tk.mesa_id],
-      );
-    }
     await conn.commit();
+
     io.emit("mesas:update");
     io.emit("ticket:update", ticketId);
     io.emit("dashboard:update");
+
     await audit({
       usuarioId: req.user?.uid || null,
       accion: "CERRAR_TICKET",

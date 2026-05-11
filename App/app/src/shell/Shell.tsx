@@ -1,30 +1,17 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
 import { getToken } from "../state/auth";
+import { getFeatures } from "../lib/auth";
+import { Navigate } from "react-router-dom";
+import { logout } from "../lib/auth";
+import "../styles/shell.css";
 
 export default function Shell() {
   const nav = useNavigate();
-  const [ready, setReady] = useState(false);
+  const features = getFeatures();
+  const token = getToken();
 
-  useEffect(() => {
-    const token = getToken();
-    console.log("Shell check token:", !!token);
-
-    if (!token) {
-      console.log("❌ No token → redirigiendo a /login");
-      nav("/login", { replace: true });
-    } else {
-      console.log("✅ Token válido → mostrando Shell");
-      setReady(true);
-    }
-  }, [nav]);
-
-  if (!ready) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-zinc-900 text-white text-xl">
-        Cargando aplicación...
-      </div>
-    );
+  if (!token) {
+    return <Navigate to="/pin" replace />;
   }
 
   return (
@@ -47,42 +34,48 @@ export default function Shell() {
           <nav className="tpv-shell-nav">
             {/* DASHBOARD */}
 
-            <NavLink
-              to="/"
-              className={({ isActive }) =>
-                `tpv-shell-link ${isActive ? "active" : ""}`
-              }
-            >
-              <span className="tpv-shell-icon">📊</span>
+            {features.includes("dashboard") && (
+              <NavLink
+                to="/app/dashboard"
+                className={({ isActive }) =>
+                  `tpv-shell-link ${isActive ? "active" : ""}`
+                }
+              >
+                <span className="tpv-shell-icon">📊</span>
 
-              <span className="tpv-shell-label">KPI</span>
-            </NavLink>
+                <span className="tpv-shell-label">KPI</span>
+              </NavLink>
+            )}
 
             {/* MESAS */}
 
-            <NavLink
-              to="/mesas"
-              className={({ isActive }) =>
-                `tpv-shell-link ${isActive ? "active" : ""}`
-              }
-            >
-              <span className="tpv-shell-icon">🍽️</span>
+            {features.includes("waiter") && (
+              <NavLink
+                to="/app/mesas"
+                className={({ isActive }) =>
+                  `tpv-shell-link ${isActive ? "active" : ""}`
+                }
+              >
+                <span className="tpv-shell-icon">🍽️</span>
 
-              <span className="tpv-shell-label">Mesas</span>
-            </NavLink>
+                <span className="tpv-shell-label">Mesas</span>
+              </NavLink>
+            )}
 
             {/* COCINA */}
 
-            <NavLink
-              to="/cocina"
-              className={({ isActive }) =>
-                `tpv-shell-link ${isActive ? "active" : ""}`
-              }
-            >
-              <span className="tpv-shell-icon">👨‍🍳</span>
+            {features.includes("kitchen") && (
+                <NavLink
+                  to="/app/cocina"
+                  className={({ isActive }) =>
+                    `tpv-shell-link ${isActive ? "active" : ""}`
+                  }
+                >
+                  <span className="tpv-shell-icon">👨‍🍳</span>
 
-              <span className="tpv-shell-label">Cocina</span>
-            </NavLink>
+                  <span className="tpv-shell-label">Cocina</span>
+                </NavLink>
+              )}
           </nav>
         </div>
 
@@ -103,6 +96,17 @@ export default function Shell() {
             <div className="tpv-shell-user-role">Caja principal</div>
           </div>
         </div>
+        <button
+          onClick={() => {
+            logout();
+            nav("/login");
+          }}
+          className="tpv-shell-link"
+        >
+          <span className="tpv-shell-icon">🚪</span>
+
+          <span className="tpv-shell-label">Salir</span>
+        </button>
       </aside>
 
       {/* =====================================================

@@ -32,15 +32,17 @@
     "appId": "com.tpv.desktop",
     "files": [
       "dist/**",
-      "electron/main.js",
-      "electron/preload.js",
+      "electron/dist/**",
       "node_modules/**"
     ],
     "directories": {
       "buildResources": "build"
     },
     "win": {
-      "target": "nsis"
+      "target": [
+        "portable",
+        "nsis"
+      ]
     }
   },
   "dependencies": {

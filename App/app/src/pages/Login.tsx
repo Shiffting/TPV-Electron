@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react';
-import { login } from '../api/endpoints';
-import { setToken, setBaseURL, getBaseURL, isTPVReady } from '../state/auth';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { login } from "../api/endpoints";
+import { setToken, setBaseURL, getBaseURL, isTPVReady } from "../state/auth";
+import { useNavigate } from "react-router-dom";
+import { saveAuth } from "../lib/auth";
+import "../styles/login.css";
 
 export default function Login() {
   const nav = useNavigate();
 
-  const [username, setU] = useState('admin');
-  const [password, setP] = useState('1234');
-  const [baseURL, setB] = useState<string>(''); // empezamos vacío
+  const [username, setU] = useState("admin");
+  const [password, setP] = useState("1234");
+  const [baseURL, setB] = useState<string>(""); // empezamos vacío
   const [err, setErr] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
@@ -41,61 +43,92 @@ export default function Login() {
       }
 
       const data = await login(username, password);
-      
-      console.log('✅ Login exitoso');
-      setToken(data.token);           // ya no hace falta await
 
-      console.log('🔄 Navegando a /');
-      nav('/', { replace: true });
+      console.log("✅ Login exitoso");
+      saveAuth(data);
 
+      // Login principal, me lleva a x sitio segun sea necesario tras el login
+      console.log("🔄 Navegando a /");
+      if (data.features.includes("dashboard")) {
+        nav("/app/dashboard", { replace: true });
+      } else if (data.features.includes("kitchen")) {
+        nav("/app/cocina", { replace: true });
+      } else {
+        nav("/app/mesas", { replace: true });
+      }
     } catch (error: any) {
       console.error(error);
-      setErr(error?.response?.data?.error || error?.message || 'Error desconocido');
+      setErr(
+        error?.response?.data?.error || error?.message || "Error desconocido",
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="h-screen grid place-items-center bg-gray-50">
-      <form onSubmit={onSubmit} className="w-[380px] bg-white p-6 rounded-2xl shadow space-y-4">
-        <h1 className="text-2xl font-bold">Iniciar sesión</h1>
-        
-        <label className="block text-sm">
-          Servidor
+    <div className="login-page">
+      <form onSubmit={onSubmit} className="login-card">
+        {/* LOGO */}
+
+        <div className="login-logo">🍽️</div>
+
+        {/* TITLES */}
+
+        <div className="login-title">TPV</div>
+
+        <div className="login-subtitle">Acceso al sistema</div>
+
+        {/* SERVER */}
+
+        <div className="login-group">
+          <label className="login-label">Servidor</label>
+
           <input
-            className="mt-1 w-full border p-2 rounded"
+            className="login-input"
             value={baseURL}
-            onChange={e => setB(e.target.value)}
+            onChange={(e) => setB(e.target.value)}
             disabled={!ready}
           />
-        </label>
+        </div>
 
-        <label className="block text-sm">Usuario
+        {/* USER */}
+
+        <div className="login-group">
+          <label className="login-label">Usuario</label>
+
           <input
-            className="mt-1 w-full border p-2 rounded"
+            className="login-input"
             value={username}
-            onChange={e => setU(e.target.value)}
+            onChange={(e) => setU(e.target.value)}
           />
-        </label>
+        </div>
 
-        <label className="block text-sm">Contraseña
+        {/* PASSWORD */}
+
+        <div className="login-group">
+          <label className="login-label">Contraseña</label>
+
           <input
             type="password"
-            className="mt-1 w-full border p-2 rounded"
+            className="login-input"
             value={password}
-            onChange={e => setP(e.target.value)}
+            onChange={(e) => setP(e.target.value)}
           />
-        </label>
+        </div>
 
-        {err && <div className="text-red-600 text-sm">{err}</div>}
+        {/* ERROR */}
+
+        {err && <div className="login-error">{err}</div>}
+
+        {/* BUTTON */}
 
         <button
           type="submit"
           disabled={loading || !ready}
-          className="w-full py-2 rounded bg-black text-white disabled:opacity-50"
+          className="login-button"
         >
-          {loading ? 'Conectando...' : !ready ? 'Cargando...' : 'Entrar'}
+          {loading ? "Conectando..." : !ready ? "Cargando..." : "Entrar"}
         </button>
       </form>
     </div>

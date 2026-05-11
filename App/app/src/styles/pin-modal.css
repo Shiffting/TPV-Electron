@@ -1,0 +1,164 @@
+.pin-overlay {
+    position: fixed;
+    inset: 0;
+
+    background: rgba(17, 24, 39, .45);
+
+    backdrop-filter: blur(6px);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    z-index: 9999;
+}
+
+.pin-modal {
+    width: 420px;
+
+    background: white;
+
+    border-radius: 32px;
+
+    padding: 28px;
+
+    border: 1px solid #e5e7eb;
+
+    box-shadow:
+        0 24px 60px rgba(0, 0, 0, .18);
+}
+
+.pin-title {
+    font-size: 28px;
+    font-weight: 800;
+
+    color: #111827;
+
+    text-align: center;
+
+    margin-bottom: 8px;
+}
+
+.pin-subtitle {
+    text-align: center;
+
+    color: #6b7280;
+
+    font-size: 14px;
+
+    margin-bottom: 28px;
+}
+
+.pin-dots {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+
+    margin-bottom: 28px;
+}
+
+.pin-dot {
+    width: 16px;
+    height: 16px;
+
+    border-radius: 999px;
+
+    background: #d1d5db;
+
+    transition: .15s;
+}
+
+.pin-dot.active {
+    background: #8b5cf6;
+
+    transform: scale(1.1);
+}
+
+.pin-grid {
+    display: grid;
+
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 14px;
+}
+
+.pin-key {
+    height: 84px;
+
+    border: none;
+
+    border-radius: 22px;
+
+    background: #f3f4f6;
+
+    color: #111827;
+
+    font-size: 28px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition: .12s;
+}
+
+.pin-key:hover {
+    background: #ebeef2;
+}
+
+.pin-key:active {
+    transform: scale(.96);
+}
+
+.pin-key.confirm {
+    background:
+        linear-gradient(135deg,
+            #7c3aed,
+            #8b5cf6);
+
+    color: white;
+
+    box-shadow:
+        0 12px 24px rgba(124, 58, 237, .22);
+}
+
+.pin-error {
+    margin-top: 18px;
+
+    text-align: center;
+
+    color: #dc2626;
+
+    font-size: 14px;
+}
+
+.pin-actions {
+    display: flex;
+    justify-content: center;
+
+    margin-bottom: 24px;
+}
+
+.pin-back {
+    border: none;
+
+    background: #f3f4f6;
+
+    color: #374151;
+
+    height: 42px;
+
+    padding: 0 18px;
+
+    border-radius: 14px;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: .12s;
+}
+
+.pin-back:hover {
+    background: #e5e7eb;
+}

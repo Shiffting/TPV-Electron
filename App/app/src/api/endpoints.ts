@@ -119,11 +119,37 @@ export async function cambiarEstadoCocina(
   lineaId: number,
   estadoOperativo: string,
 ) {
+  await api.patch(`/cocina/${lineaId}/estado`, {
+    estadoOperativo,
+  });
+}
 
-  await api.patch(
-    `/cocina/${lineaId}/estado`,
-    {
-      estadoOperativo,
-    },
+//Logueo rápido con PIN
+export async function loginPIN(pin: string) {
+  const { data } = await api.post("/auth/pin", { pin });
+
+  return data;
+}
+
+//Bloquear mesa
+export async function lockMesa(mesaId: number) {
+  const { data } = await api.post(`/mesas/${mesaId}/lock`);
+
+  return data;
+}
+
+//Desbloquear mesa
+export async function unlockMesa(mesaId: number) {
+  const { data } = await api.post(`/mesas/${mesaId}/unlock`);
+
+  return data;
+}
+
+//Renovamos Lock periodicamente
+export async function pingMesaLock(
+  mesaId: number,
+) {
+  await api.post(
+    `/mesas/${mesaId}/ping-lock`,
   );
 }

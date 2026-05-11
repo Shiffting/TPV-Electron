@@ -103,7 +103,23 @@ r.get("/", async (req, res) => {
     propiedades: propsByLinea[l.id] || [],
   }));
 
-  res.json(final);
+  const [estaciones] = await pool.query(`
+  SELECT
+    id,
+    nombre,
+    color
+  FROM estaciones
+  ORDER BY orden ASC, id ASC
+`);
+
+  const grouped = estaciones.map((e) => ({
+    id: e.id,
+    nombre: e.nombre,
+    color: e.color,
+    lineas: final.filter((l) => l.estacionId === e.id),
+  }));
+
+  res.json(grouped);
 });
 
 /* =========================================

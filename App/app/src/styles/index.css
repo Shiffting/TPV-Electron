@@ -3,351 +3,62 @@
 @tailwind utilities;
 
 /* =========================================================
-   APP GENERAL
+   GLOBAL
 ========================================================= */
 
-body {
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
   margin: 0;
+  padding: 0;
+
+  width: 100%;
+  height: 100%;
+}
+
+body {
   font-family: Inter, sans-serif;
 
   background: #f4f6fb;
+
   color: #111827;
+
+  overflow: hidden;
 }
 
 /* =========================================================
-   LAYOUT GENERAL
+   LAYOUT
 ========================================================= */
 
 .tpv-layout {
   height: calc(100vh - 36px);
 
   display: flex;
-  flex-direction: column;
 
   gap: 18px;
 
   overflow: hidden;
-
-  min-height: 0;
 }
 
 /* =========================================================
-   SIDEBAR
+   PAGE
 ========================================================= */
 
-.tpv-shell-sidebar {
-  width: 96px;
-
-  background:
-    linear-gradient(180deg,
-      #111827 0%,
-      #1e1b4b 100%);
-
-  border-right:
-    1px solid rgba(255, 255, 255, 0.06);
-
-  padding: 18px 12px;
-
-  display: flex;
-  flex-direction: column;
-
-  gap: 18px;
-
-  flex-shrink: 0;
-}
-
-/* =========================================================
-   LOGO
-========================================================= */
-
-.tpv-shell-logo {
-  height: 68px;
-
-  border-radius: 22px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  color: white;
-
-  font-size: 28px;
-  font-weight: 900;
-
-  letter-spacing: -1px;
-}
-
-/* =========================================================
-   SECCIÓN SIDEBAR
-========================================================= */
-
-.tpv-shell-section {
-  display: flex;
-  flex-direction: column;
-
-  gap: 10px;
-}
-
-/* =========================================================
-   TÍTULO SECCIÓN
-========================================================= */
-
-.tpv-shell-section-title {
-  padding-left: 10px;
-
-  font-size: 10px;
-  font-weight: 800;
-
-  letter-spacing: 0.12em;
-
-  color: rgba(255, 255, 255, 0.38);
-}
-
-/* =========================================================
-   NAV
-========================================================= */
-
-.tpv-shell-nav {
-  display: flex;
-  flex-direction: column;
-
-  gap: 12px;
-}
-
-/* =========================================================
-   LINKS
-========================================================= */
-
-.tpv-shell-link {
-  height: 84px;
-
-  border-radius: 24px;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-
-  gap: 8px;
-
-  text-decoration: none;
-
-  color: #c4b5fd;
-
-  transition:
-    background 0.15s ease,
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
-
-  position: relative;
-}
-
-.tpv-shell-link:hover {
-  background:
-    rgba(255, 255, 255, 0.06);
-
-  transform: translateY(-1px);
-}
-
-/* =========================================================
-   ICONO
-========================================================= */
-
-.tpv-shell-icon {
-  font-size: 22px;
-}
-
-/* =========================================================
-   TEXTO
-========================================================= */
-
-.tpv-shell-label {
-  font-size: 13px;
-  font-weight: 600;
-}
-
-/* =========================================================
-   ACTIVE STATE
-========================================================= */
-
-.tpv-shell-link.active {
-  background:
-    linear-gradient(135deg,
-      #8b5cf6,
-      #7c3aed);
-
-  color: white;
-
-  box-shadow:
-    0 10px 24px rgba(139, 92, 246, 0.28);
-}
-
-/* =========================================================
-   USUARIO
-========================================================= */
-
-.tpv-shell-user {
-  background:
-    rgba(255, 255, 255, 0.06);
-
-  border:
-    1px solid rgba(255, 255, 255, 0.08);
-
-  border-radius: 22px;
-
-  padding: 12px 10px;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-
-  gap: 10px;
-}
-
-/* =========================================================
-   AVATAR
-========================================================= */
-
-.tpv-shell-user-avatar {
-  width: 42px;
-  height: 42px;
-
-  border-radius: 14px;
-
-  background:
-    linear-gradient(135deg,
-      #8b5cf6,
-      #7c3aed);
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  color: white;
-
-  font-weight: 800;
-}
-
-/* =========================================================
-   INFO USER
-========================================================= */
-
-.tpv-shell-user-info {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-
-  gap: 2px;
-}
-
-.tpv-shell-user-name {
-  color: white;
-
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.tpv-shell-user-role {
-  color: #a5b4fc;
-
-  font-size: 11px;
-}
-
-/* =========================================================
-   PÁGINA COMPLETA
-========================================================= */
-
-.ticket-page {
-  height: 100vh;
+.tpv-page {
+  flex: 1;
 
   padding: 18px;
 
-  background: #f4f6fb;
-
-  box-sizing: border-box;
-
   overflow: hidden;
 
   display: flex;
   flex-direction: column;
-}
 
-/* =========================================================
-   LAYOUT INTERNO
-========================================================= */
-
-.ticket-layout {
-  flex: 1;
-
-  display: flex;
-  flex-direction: column;
-
-  min-height: 0;
-
-  overflow: hidden;
-
-  padding-top: 16px;
-}
-
-/* =========================================================
-   CONTENIDO CENTRAL
-========================================================= */
-
-.ticket-content {
-  flex: 1;
-
-  display: grid;
-
-  grid-template-columns:
-    180px minmax(0, 1fr) 380px;
-
-  gap: 18px;
-
-  min-height: 0;
-  overflow: hidden;
-  margin-top: 12px;
-}
-
-/* =========================================================
-   PANEL BASE
-========================================================= */
-
-.tpv-panel {
-  background: #ffffff;
-
-  border-radius: 30px;
-
-  border: 1px solid #e7eaf3;
-
-  box-shadow:
-    0 10px 30px rgba(15, 23, 42, 0.04);
-
-  min-height: 0;
-}
-
-/* =========================================================
-   SCROLL INTERNO
-========================================================= */
-
-.scroll-area {
-  overflow-y: auto;
-
-  min-height: 0;
-
-  padding-right: 4px;
-}
-
-/* =========================================================
-   SCROLLBAR OCULTA
-========================================================= */
-
-.scroll-area::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-}
-
-.scroll-area {
-  scrollbar-width: none;
+  min-width: 0;
 }
 
 /* =========================================================
@@ -363,10 +74,6 @@ body {
 
   border: 1px solid #e5e7eb;
 
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.04),
-    0 8px 24px rgba(0, 0, 0, 0.04);
-
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -374,21 +81,26 @@ body {
   padding: 0 22px;
 
   flex-shrink: 0;
+
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, .04);
 }
 
 .tpv-header-left {
   display: flex;
   align-items: center;
+
   gap: 14px;
 }
 
 .tpv-page-title {
   font-size: 28px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .tpv-ticket-badge {
   background: #ede9fe;
+
   color: #6d28d9;
 
   padding: 8px 14px;
@@ -396,538 +108,12 @@ body {
   border-radius: 14px;
 
   font-size: 14px;
-  font-weight: 600;
-}
-
-.tpv-back-button {
-  height: 48px;
-
-  padding: 0 20px;
-
-  border: none;
-
-  background: #111827;
-  color: white;
-
-  border-radius: 16px;
-
-  font-weight: 600;
-
-  cursor: pointer;
-
-  transition: 0.15s;
-}
-
-.tpv-back-button:hover {
-  opacity: 0.92;
-}
-
-/* =========================================================
-   CONTENIDO
-========================================================= */
-
-.tpv-content {
-  flex: 1;
-
-  display: grid;
-
-  grid-template-columns:
-    minmax(0, 1fr) 380px;
-
-  gap: 18px;
-
-  min-height: 0;
-
-  margin-top: 18px;
-}
-
-/* =========================================================
-   ZONA PRODUCTOS
-========================================================= */
-
-.tpv-products-section {
-  display: grid;
-
-  grid-template-columns:
-    180px minmax(0, 1fr);
-
-  gap: 18px;
-
-  overflow: hidden;
-  min-height: 0;
-}
-
-/* =========================================================
-   PANEL CATEGORÍAS
-========================================================= */
-
-.tpv-categories-panel {
-  background: white;
-
-  border-radius: 28px;
-
-  border: 1px solid #e5e7eb;
-
-  padding: 10px;
-
-  display: flex;
-  flex-direction: column;
-
-  gap: 10px;
-
-  min-height: 0;
-
-  overflow: hidden;
-}
-
-.tpv-categories-scroll {
-  flex: 1;
-
-  overflow-y: auto;
-
-  min-height: 0;
-
-  padding-right: 4px;
-
-  scrollbar-width: none;
-}
-
-.tpv-categories-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.tpv-category-button {
-  min-height: 52px;
-  border: none;
-  border-radius: 18px;
-  background: transparent;
-  color: #4b5563;
-  font-size: 15px;
-  font-weight: 600;
-  text-align: left;
-  padding: 0 16px;
-  cursor: pointer;
-  transition: 0.15s;
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.tpv-category-button:hover {
-  background: #f3f4f6;
-}
-
-.tpv-category-button.active {
-  background:
-    linear-gradient(135deg,
-      #8b5cf6,
-      #7c3aed);
-
-  color: white;
-
-  box-shadow:
-    0 10px 24px rgba(139, 92, 246, 0.22);
-}
-
-/* =========================================================
-   PANEL PRODUCTOS
-========================================================= */
-
-.tpv-products-panel {
-  background: white;
-
-  border-radius: 28px;
-
-  border: 1px solid #e5e7eb;
-
-  padding: 18px;
-
-  overflow-y: auto;
-}
-
-/* =========================================================
-   GRID PRODUCTOS
-========================================================= */
-
-.tpv-products-grid {
-  display: grid;
-
-  grid-template-columns:
-    repeat(auto-fill, minmax(170px, 190px));
-
-  gap: 16px;
-
-  align-content: start;
-}
-
-/* =========================================================
-   PRODUCT CARD
-========================================================= */
-
-.tpv-product-card {
-  height: 140px;
-
-  border: 1px solid #ececf1;
-
-  background: white;
-
-  border-radius: 24px;
-
-  padding: 16px;
-
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-
-  cursor: pointer;
-
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease,
-    border-color 0.15s ease;
-
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.tpv-product-card:hover {
-  transform: translateY(-2px);
-
-  border-color: #8b5cf6;
-
-  box-shadow:
-    0 10px 24px rgba(139, 92, 246, 0.12);
-}
-
-.tpv-product-image {
-  width: 50px;
-  height: 50px;
-
-  border-radius: 16px;
-
-  background: #f3f4f6;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  font-size: 11px;
-  font-weight: 600;
-
-  color: #9ca3af;
-}
-
-.tpv-product-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.tpv-product-name {
-  font-size: 16px;
-  font-weight: 700;
-
-  line-height: 1.2;
-
-  color: #111827;
-}
-
-.tpv-product-category {
-  font-size: 13px;
-  color: #6b7280;
-}
-
-.tpv-product-price {
-  font-size: 22px;
-  font-weight: 800;
-
-  color: #7c3aed;
-}
-
-/* =========================================================
-   PANEL TICKET
-========================================================= */
-
-.tpv-ticket-panel {
-  background: white;
-  border-radius: 28px;
-  border: 1px solid #e5e7eb;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-
-  box-shadow:
-    0 10px 30px rgba(0, 0, 0, 0.06);
-  min-height: 0;
-}
-
-/* =========================================================
-   HEADER TICKET
-========================================================= */
-
-.tpv-ticket-header {
-  height: 92px;
-
-  padding: 0 24px;
-
-  border-bottom: 1px solid #eef0f3;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  flex-shrink: 0;
-
-}
-
-.tpv-ticket-title {
-  font-size: 24px;
-  font-weight: 700;
-}
-
-.tpv-ticket-subtitle {
-  margin-top: 4px;
-
-  font-size: 14px;
-
-  color: #6b7280;
-}
-
-.tpv-ticket-status {
-  background: #dcfce7;
-
-  color: #15803d;
-
-  padding: 8px 14px;
-
-  border-radius: 999px;
-
-  font-size: 12px;
   font-weight: 700;
 }
 
 /* =========================================================
-   LÍNEAS TICKET
+   BUTTONS
 ========================================================= */
-
-.tpv-ticket-lines {
-  flex: 1;
-  overflow-y: auto;
-  padding: 18px;
-  min-height: 0;
-  scrollbar-width: none;
-}
-
-.tpv-ticket-empty {
-  height: 100%;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  color: #9ca3af;
-
-  font-size: 14px;
-}
-
-.tpv-ticket-line:hover {
-  background: #f3f3fa;
-}
-
-.tpv-ticket-line-left {
-  flex: 1;
-  min-width: 0;
-}
-
-.tpv-ticket-line-top {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.tpv-ticket-edit-icon {
-  font-size: 12px;
-
-  color: #7c3aed;
-
-  opacity: 0.75;
-}
-
-.tpv-ticket-line-name {
-  font-size: 16px;
-  font-weight: 700;
-
-  color: #111827;
-}
-
-.tpv-ticket-line-qty {
-  margin-top: 2px;
-
-  font-size: 14px;
-  color: #64748b;
-}
-
-.tpv-ticket-line-properties {
-  margin-top: 6px;
-
-  font-size: 13px;
-  line-height: 1.4;
-
-  color: #7c3aed;
-
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.tpv-ticket-line-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  flex-shrink: 0;
-}
-
-.tpv-ticket-line-price {
-  font-size: 22px;
-  font-weight: 800;
-
-  color: #0f172a;
-}
-
-.tpv-ticket-swipe-wrapper {
-  position: relative;
-
-  overflow: hidden;
-
-  border-radius: 20px;
-
-  background: transparent;
-}
-
-.tpv-ticket-delete-bg {
-  position: absolute;
-  inset: 0;
-
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-
-  padding-right: 24px;
-
-  background: #ef4444;
-
-  color: white;
-
-  font-size: 22px;
-
-  opacity: 0;
-
-  transition: opacity 0.15s ease;
-}
-
-.tpv-ticket-swipe-wrapper.swiping .tpv-ticket-delete-bg {
-  opacity: 1;
-}
-
-.tpv-ticket-line {
-  position: relative;
-  z-index: 2;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 16px;
-
-  padding: 16px 18px;
-
-  background: #f8f8fb;
-
-  border: 1px solid #ececf3;
-  border-radius: 20px;
-
-  touch-action: pan-y;
-
-  user-select: none;
-
-  will-change: transform;
-}
-
-
-/* =========================================================
-   FOOTER TICKET
-========================================================= */
-
-.tpv-ticket-footer {
-  border-top: 1px solid #eef0f3;
-
-  padding: 20px;
-
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-
-  flex-shrink: 0;
-}
-
-/* =========================================================
-   RESUMEN
-========================================================= */
-
-.tpv-summary {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.tpv-summary-row {
-  display: flex;
-  justify-content: space-between;
-
-  color: #6b7280;
-
-  font-size: 14px;
-}
-
-.tpv-summary-total {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  font-size: 28px;
-  font-weight: 800;
-}
-
-/* =========================================================
-   BOTONES FOOTER
-========================================================= */
-
-.tpv-actions {
-  display: grid;
-
-  grid-template-columns: 1fr 1fr;
-
-  gap: 12px;
-}
-
-.tpv-secondary-button {
-  height: 56px;
-
-  border: none;
-
-  border-radius: 18px;
-
-  background: #f3f4f6;
-
-  color: #111827;
-
-  font-weight: 700;
-
-  cursor: pointer;
-}
 
 .tpv-primary-button {
   height: 56px;
@@ -948,12 +134,83 @@ body {
 
   cursor: pointer;
 
-  box-shadow:
-    0 12px 24px rgba(34, 197, 94, 0.22);
+  transition: .15s;
 
-  transition: 0.15s;
+  box-shadow:
+    0 12px 24px rgba(34, 197, 94, .22);
 }
 
 .tpv-primary-button:hover {
   transform: translateY(-1px);
+}
+
+.tpv-secondary-button {
+  height: 56px;
+
+  border: none;
+
+  border-radius: 18px;
+
+  background: #f3f4f6;
+
+  color: #111827;
+
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+/* =========================================================
+   BACK BUTTON
+========================================================= */
+
+.tpv-back-button {
+  height: 48px;
+
+  padding: 0 20px;
+
+  border: none;
+
+  background: #111827;
+
+  color: white;
+
+  border-radius: 16px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+/* =========================================================
+   SCROLLBAR HIDE
+========================================================= */
+
+.hide-scrollbar {
+  scrollbar-width: none;
+}
+
+.tpv-layout {
+  height: calc(100vh - 36px);
+
+  display: flex;
+
+  gap: 18px;
+
+  overflow: hidden;
+}
+
+.tpv-page {
+  flex: 1;
+
+  padding: 18px;
+
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+
+  min-height: 0;
 }

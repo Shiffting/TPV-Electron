@@ -3,6 +3,7 @@ import { cambiarEstadoCocina, getCocina } from "../api/endpoints";
 import { socket } from "../lib/socket";
 
 import "../styles/cocina.css";
+import "../styles/index.css";
 
 /* =========================================================
    TIPOS
@@ -26,7 +27,7 @@ interface LineaCocina {
 ========================================================= */
 
 export default function Cocina() {
-  const [lineas, setLineas] = useState<LineaCocina[]>([]);
+  const [estaciones, setEstaciones] = useState<any[]>([]);
 
   /* =====================================================
       LOAD
@@ -35,8 +36,7 @@ export default function Cocina() {
   async function load() {
     try {
       const res = await getCocina();
-
-      setLineas(res);
+      setEstaciones(res);
     } catch (e) {
       console.error(e);
     }
@@ -53,24 +53,6 @@ export default function Cocina() {
       socket.off("cocina:update");
     };
   }, []);
-
-  /* =====================================================
-      AGRUPAR POR ESTACIÓN
-  ===================================================== */
-
-  const estaciones = useMemo(() => {
-    const map = new Map();
-
-    for (const l of lineas) {
-      if (!map.has(l.estacionNombre)) {
-        map.set(l.estacionNombre, []);
-      }
-
-      map.get(l.estacionNombre).push(l);
-    }
-
-    return Array.from(map.entries());
-  }, [lineas]);
 
   /* =====================================================
       CAMBIAR ESTADO
@@ -119,60 +101,50 @@ export default function Cocina() {
       ================================================== */}
 
       <div className="cocina-stations">
-        {estaciones.map(([nombre, ls]: any) => (
-          <div key={nombre} className="cocina-station">
-            {/* HEADER ESTACIÓN */}
+        {estaciones.map((estacion: any) => (
+          <div key={estacion.id} className="cocina-station">
+            {/* HEADER */}
 
             <div className="cocina-station-header">
               <div
                 className="cocina-station-dot"
                 style={{
-                  background: ls[0]?.estacionColor,
+                  background: estacion.color,
                 }}
               />
 
-              <div className="cocina-station-title">{nombre}</div>
+              <div className="cocina-station-title">{estacion.nombre}</div>
 
-              <div className="cocina-station-count">{ls.length}</div>
+              <div className="cocina-station-count">
+                {estacion.lineas.length}
+              </div>
             </div>
 
             {/* COLUMNAS */}
 
             <div className="cocina-columns">
-              {/* =====================================
-                    PENDIENTE
-                ====================================== */}
-
               <EstadoColumn
                 titulo="Pendiente"
                 estado="pendiente"
-                lineas={ls.filter(
+                lineas={estacion.lineas.filter(
                   (l: LineaCocina) => l.estadoOperativo === "pendiente",
                 )}
                 onClick={avanzarEstado}
               />
 
-              {/* =====================================
-                    PREPARANDO
-                ====================================== */}
-
               <EstadoColumn
                 titulo="Preparando"
                 estado="preparando"
-                lineas={ls.filter(
+                lineas={estacion.lineas.filter(
                   (l: LineaCocina) => l.estadoOperativo === "preparando",
                 )}
                 onClick={avanzarEstado}
               />
 
-              {/* =====================================
-                    LISTO
-                ====================================== */}
-
               <EstadoColumn
                 titulo="Listo"
                 estado="listo"
-                lineas={ls.filter(
+                lineas={estacion.lineas.filter(
                   (l: LineaCocina) => l.estadoOperativo === "listo",
                 )}
                 onClick={avanzarEstado}

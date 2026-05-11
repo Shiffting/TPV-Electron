@@ -7,21 +7,24 @@ import "express-async-errors";
 import http from "http";
 import { Server } from "socket.io";
 
-import mesas from "./routes/mesas.js";
-import productos from "./routes/productos.js";
-import tickets from "./routes/tickets.js";
-import pagos from "./routes/pagos.js";
-import auth from "./routes/auth.js";
-import usuarios from "./routes/usuarios.js";
-import categorias from "./routes/categorias.js";
-import { authMiddleware } from "./lib/auth.js";
-import report from "./routes/report.js";
-import { rlAuth, rlAPI } from "./lib/rateLimit.js";
-import { notFound, errorHandler } from "./lib/errors.js";
-import caja from "./routes/caja.js";
-import expcsv from "./routes/export.js";
+import mesasRouter from "./routes/mesas.js";
+import productosRouter from "./routes/productos.js";
+import ticketsRouter from "./routes/tickets.js";
+import pagosRouter from "./routes/pagos.js";
+import authRouter from "./routes/auth.js";
+import usuariosRouter from "./routes/usuarios.js";
+import categoriasRouter from "./routes/categorias.js";
+import reportRouter from "./routes/report.js";
+import cajaRouter from "./routes/caja.js";
+import exportRouter from "./routes/export.js";
 import estacionesRouter from "./routes/estaciones.js";
 import cocinaRouter from "./routes/cocina.js";
+
+import { authMiddleware } from "./lib/auth.js";
+import { requireFeature } from "./lib/requireFeature.js";
+
+import { rlAuth, rlAPI } from "./lib/rateLimit.js";
+import { notFound, errorHandler } from "./lib/errors.js";
 
 /* =========================================
    APP
@@ -61,7 +64,9 @@ const allowed = (process.env.CORS_ORIGINS || "")
 app.use(
   cors({
     origin: (origin, cb) => {
-      if (!origin) return cb(null, true);
+      if (!origin) {
+        return cb(null, true);
+      }
 
       if (!allowed.length || allowed.includes(origin)) {
         return cb(null, true);
@@ -69,6 +74,7 @@ app.use(
 
       return cb(new Error("CORS bloqueado: " + origin));
     },
+
     credentials: true,
   }),
 );
@@ -90,32 +96,10 @@ if (process.env.NODE_ENV === "production") {
 app.use("/auth", rlAuth);
 
 /* =========================================
-   ROUTES
+   PUBLIC ROUTES
 ========================================= */
 
-app.use("/tickets", authMiddleware, tickets);
-
-app.use("/pagos", authMiddleware, pagos);
-
-app.use("/auth", auth);
-
-app.use("/usuarios", usuarios);
-
-app.use("/mesas", mesas);
-
-app.use("/productos", productos);
-
-app.use("/categorias", categorias);
-
-app.use("/report", report);
-
-app.use("/caja", caja);
-
-app.use("/export", expcsv);
-
-app.use("/estaciones", estacionesRouter);
-
-app.use("/cocina", cocinaRouter);
+app.use("/auth", authRouter);
 
 app.get("/health", (_, res) =>
   res.json({
@@ -123,6 +107,36 @@ app.get("/health", (_, res) =>
     ts: new Date().toISOString(),
   }),
 );
+
+/* =========================================
+   PROTECTED ROUTES
+========================================= */
+
+app.use("/tickets", authMiddleware, ticketsRouter);
+
+app.use("/pagos", authMiddleware, pagosRouter);
+
+app.use("/usuarios", authMiddleware, usuariosRouter);
+
+app.use("/mesas", authMiddleware, mesasRouter);
+
+app.use("/productos", authMiddleware, productosRouter);
+
+app.use("/categorias", authMiddleware, categoriasRouter);
+
+app.use("/caja", authMiddleware, cajaRouter);
+
+app.use("/export", authMiddleware, exportRouter);
+
+app.use("/estaciones", authMiddleware, estacionesRouter);
+
+/* =========================================
+   FEATURE ROUTES
+========================================= */
+
+app.use("/cocina", authMiddleware, requireFeature("kitchen"), cocinaRouter);
+
+app.use("/report", authMiddleware, requireFeature("dashboard"), reportRouter);
 
 /* =========================================
    ERRORS
