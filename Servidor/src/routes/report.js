@@ -75,7 +75,7 @@ r.get("/top-products", async (req, res) => {
             SUM(l.total_linea) AS total
      FROM ticket_lineas l
      JOIN tickets t ON t.id=l.ticket_id
-     WHERE l.estado IN ('pagado') AND t.cerrado_en BETWEEN ? AND ?
+     WHERE l.estatus_financiero = 'pagado' AND t.cerrado_en BETWEEN ? AND ?
      GROUP BY l.producto_id, l.nombre_producto
      ORDER BY total DESC
      LIMIT 20`,
@@ -94,7 +94,7 @@ r.get("/by-category", async (req, res) => {
      JOIN tickets t ON t.id=l.ticket_id
      LEFT JOIN productos p ON p.id=l.producto_id
      LEFT JOIN categorias c ON c.id=p.categoria_id
-     WHERE l.estado='pagado' AND t.cerrado_en BETWEEN ? AND ?
+     WHERE l.estatus_financiero = 'pagado' AND t.cerrado_en BETWEEN ? AND ?
      GROUP BY c.id, c.nombre
      ORDER BY total DESC`,
     [from, to],
@@ -160,7 +160,7 @@ r.get("/kpis", async (req, res) => {
             SUM(l.cantidad) AS uds, SUM(l.total_linea) AS total
      FROM ticket_lineas l
      JOIN tickets t ON t.id=l.ticket_id
-     WHERE l.estado='pagado'
+     WHERE l.estatus_financiero = 'pagado'
        AND t.cerrado_en >= DATE_SUB(DATE(NOW()), INTERVAL 6 DAY)
      GROUP BY l.producto_id, l.nombre_producto
      ORDER BY total DESC

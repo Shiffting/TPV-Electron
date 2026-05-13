@@ -48,7 +48,7 @@ r.get('/top-productos.csv', async (req, res) => {
             SUM(l.cantidad) AS uds, SUM(l.total_linea) AS total
      FROM ticket_lineas l
      JOIN tickets t ON t.id=l.ticket_id
-     WHERE l.estado='pagado' AND t.cerrado_en BETWEEN ? AND ?
+     WHERE l.estatus_financiero='pagado' AND t.cerrado_en BETWEEN ? AND ?
      GROUP BY l.producto_id, l.nombre_producto
      ORDER BY total DESC
      LIMIT 200`,

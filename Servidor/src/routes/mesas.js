@@ -21,8 +21,8 @@ r.get("/", async (req, res) => {
             ON t.id = tl.ticket_id
 
           WHERE t.mesa_id = m.id
-            AND t.estado IN ('abierto', 'parcial')
-            AND tl.estado = 'pendiente'
+            AND t.estatus_financiero IN ('abierto', 'parcial')
+            AND tl.estatus_financiero = 'simpa'
         )
         THEN 'ocupada'
         ELSE 'libre'
@@ -36,8 +36,8 @@ r.get("/", async (req, res) => {
           ON t.id = tl.ticket_id
 
         WHERE t.mesa_id = m.id
-          AND t.estado IN ('abierto', 'parcial')
-          AND tl.estado = 'pendiente'
+          AND t.estatus_financiero IN ('abierto', 'parcial')
+          AND tl.estatus_financiero = 'simpa'
       ), 0) AS items_pendientes,
 
       COALESCE((
@@ -48,7 +48,7 @@ r.get("/", async (req, res) => {
           ON t.id = tl.ticket_id
 
         WHERE t.mesa_id = m.id
-          AND t.estado IN ('abierto', 'parcial')
+          AND t.estatus_financiero IN ('abierto', 'parcial')
       ), 0) AS total
 
     FROM mesas m
@@ -161,7 +161,7 @@ r.get("/:id/ticket-abierto", async (req, res) => {
     `SELECT id
      FROM tickets
      WHERE mesa_id = ?
-       AND estado IN ('abierto', 'parcial')
+       AND estatus_financiero IN ('abierto', 'parcial')
      ORDER BY id DESC
      LIMIT 1`,
     [mesaId],

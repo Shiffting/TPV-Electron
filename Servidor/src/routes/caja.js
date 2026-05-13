@@ -84,7 +84,7 @@ r.post('/cerrar', async (req, res) => {
 
   const conn = await pool.getConnection();
   try {
-    await conn.beginTransaction();
+    await conn.comenzarTransaccion();
 
     const [[s]] = await conn.query(`SELECT * FROM caja_sesiones WHERE estado='abierta' ORDER BY id DESC LIMIT 1 FOR UPDATE`);
     if (!s) throw new Error('Sin sesión abierta');
@@ -105,7 +105,7 @@ r.post('/cerrar', async (req, res) => {
 
     await conn.execute(
       `UPDATE caja_sesiones
-       SET estado='cerrada', usuario_cierre=?, cerrado_en=NOW(),
+       SET estatus_financiero='pagado', usuario_cierre=?, cerrado_en=NOW(),
            efectivo_contado=?, observaciones=COALESCE(?, observaciones)
        WHERE id=?`,
       [uid || null, efectivoContado, observaciones, s.id]

@@ -138,13 +138,19 @@ app.use("/cocina", authMiddleware, requireFeature("kitchen"), cocinaRouter);
 
 app.use("/report", authMiddleware, requireFeature("dashboard"), reportRouter);
 
-/* =========================================
-   ERRORS
-========================================= */
+// =====================================
+// ERROR HANDLER GLOBAL
+// =====================================
 
-app.use(notFound);
+app.use((err, req, res, next) => {
+  console.error("ERROR GLOBAL:");
+  console.error(err);
 
-app.use(errorHandler);
+  res.status(500).json({
+    error: err.message,
+    stack: err.stack,
+  });
+});
 
 /* =========================================
    START
