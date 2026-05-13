@@ -1,43 +1,98 @@
 import { Router } from "express";
-import { pool } from "../db/pool.js";
+
+import { crearEstacion } from "../../domain/estaciones/crearEstacion.js";
+import { editarEstacion } from "../../domain/estaciones/editarEstacion.js";
+import { eliminarEstacion } from "../../domain/estaciones/eliminarEstacion.js";
+import { obtenerEstacion } from "../../projections/estaciones/obtenerEstacion.js";
+import { obtenerEstaciones } from "../../projections/estaciones/obtenerEstaciones.js";
 
 const r = Router();
 
 /* =========================================
-   LISTAR
+   OBTENER ESTACIONES
 ========================================= */
 
 r.get("/", async (req, res) => {
-  const [rows] = await pool.query(`
-    SELECT *
-    FROM estaciones
-    WHERE activa = 1
-    ORDER BY nombre
-  `);
-  res.json(rows);
+  try {
+    const estaciones = await obtenerEstaciones();
+
+    res.json(estaciones);
+  } catch (e) {
+    res.status(500).json({
+      error: e.message,
+    });
+  }
 });
 
 /* =========================================
-   CREAR
+   OBTENER ESTACIÓN
+========================================= */
+
+r.get("/:estacionId", async (req, res) => {
+  try {
+    const estacion = await obtenerEstacion({
+      estacionId: Number(req.params.estacionId),
+    });
+
+    res.json(estacion);
+  } catch (e) {
+    res.status(500).json({
+      error: e.message,
+    });
+  }
+});
+
+/* =========================================
+   CREAR ESTACIÓN
 ========================================= */
 
 r.post("/", async (req, res) => {
-  const {
-    nombre,
-    color = "#6366f1",
-  } = req.body;
-  const [ins] = await pool.execute(
-    `
-    INSERT INTO estaciones
-    (nombre, color)
-    VALUES (?, ?)
-    `,
-    [nombre, color],
-  );
+  try {
+    const result = await crearEstacion(req.body);
 
-  res.json({
-    id: ins.insertId,
-  });
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({
+      error: e.message,
+    });
+  }
+});
+
+/* =========================================
+   EDITAR ESTACIÓN
+========================================= */
+
+r.patch("/:estacionId", async (req, res) => {
+  try {
+    const result = await editarEstacion({
+      estacionId: Number(req.params.estacionId),
+      cambios: req.body,
+    });
+
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({
+      error: e.message,
+    });
+  }
+});
+
+/* =========================================
+   ELIMINAR ESTACIÓN
+========================================= */
+
+r.delete("/:estacionId", async (req, res) => {
+  try {
+    const result = await eliminarEstacion({
+      estacionId: Number(req.params.estacionId),
+    });
+
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({
+      error: e.message,
+    });
+  }
 });
 
 export default r;

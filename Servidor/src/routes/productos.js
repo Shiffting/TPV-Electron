@@ -1,57 +1,98 @@
 import { Router } from "express";
-import { pool } from "../db/pool.js";
+
+import { crearProducto } from "../../domain/productos/crearProducto.js";
+import { editarProducto } from "../../domain/productos/editarProducto.js";
+import { eliminarProducto } from "../../domain/productos/eliminarProducto.js";
+import { obtenerProducto } from "../../projections/productos/obtenerProducto.js";
+import { obtenerProductos } from "../../projections/productos/obtenerProductos.js";
 
 const r = Router();
 
-/* =========================================================
-   GET PRODUCTOS
-========================================================= */
+/* =========================================
+   OBTENER PRODUCTOS
+========================================= */
 
 r.get("/", async (req, res) => {
-  const [rows] = await pool.query(
-    `
-    SELECT
-      p.*,
-      c.nombre AS categoria,
-      e.nombre AS estacion_nombre,
-      e.color AS estacion_color
-    FROM productos p
+  try {
+    const productos = await obtenerProductos(req.query);
 
-    JOIN categorias c
-      ON c.id = p.categoria_id
-
-    LEFT JOIN estaciones e
-      ON e.id = p.estacion_id
-
-    WHERE p.activo = 1 ORDER BY c.nombre, p.nombre
-    `,
-  );
-
-  res.json(rows);
+    res.json(productos);
+  } catch (e) {
+    res.status(500).json({
+      error: e.message,
+    });
+  }
 });
 
-/* =========================================================
-   GET PROPIEDADES DE PRODUCTO
-========================================================= */
+/* =========================================
+   OBTENER PRODUCTO
+========================================= */
 
-r.get("/:id/propiedades", async (req, res) => {
-  const { id } = req.params;
+r.get("/:productoId", async (req, res) => {
+  try {
+    const producto = await obtenerProducto({
+      productoId: Number(req.params.productoId),
+    });
 
-  const [rows] = await pool.query(
-    `
-    SELECT
-      pr.id,
-      pr.nombre,
-      pr.precio_delta
-    FROM producto_propiedades pp
-    JOIN propiedades pr
-      ON pr.id = pp.propiedad_id
-    WHERE pp.producto_id = ?
-    `,
-    [id],
-  );
+    res.json(producto);
+  } catch (e) {
+    res.status(500).json({
+      error: e.message,
+    });
+  }
+});
 
-  res.json(rows);
+/* =========================================
+   CREAR PRODUCTO
+========================================= */
+
+r.post("/", async (req, res) => {
+  try {
+    const result = await crearProducto(req.body);
+
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({
+      error: e.message,
+    });
+  }
+});
+
+/* =========================================
+   EDITAR PRODUCTO
+========================================= */
+
+r.patch("/:productoId", async (req, res) => {
+  try {
+    const result = await editarProducto({
+      productoId: Number(req.params.productoId),
+      cambios: req.body,
+    });
+
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({
+      error: e.message,
+    });
+  }
+});
+
+/* =========================================
+   ELIMINAR PRODUCTO
+========================================= */
+
+r.delete("/:productoId", async (req, res) => {
+  try {
+    const result = await eliminarProducto({
+      productoId: Number(req.params.productoId),
+    });
+
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({
+      error: e.message,
+    });
+  }
 });
 
 export default r;

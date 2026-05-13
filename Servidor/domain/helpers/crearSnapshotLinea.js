@@ -1,161 +1,108 @@
 export async function crearSnapshotLinea({
-  conn,
-  lineaOriginal,
-  createdByActionUuid,
-  overrides = {},
-  copiarPropiedades = true
+    conn,
+    lineaOriginal,
+    cambios = {},
 }) {
-  // =====================================
-  // SNAPSHOT NUEVO
-  // =====================================
+    // =====================================
+    // NUEVO SNAPSHOT
+    // =====================================
 
-  const snapshot = {
-    line_group_uuid: lineaOriginal.line_group_uuid,
-    ticket_id: lineaOriginal.ticket_id,
-    producto_id: lineaOriginal.producto_id,
-    nombre_producto: lineaOriginal.nombre_producto,
-    cantidad: lineaOriginal.cantidad,
-    pvp: lineaOriginal.pvp,
-    pvp_base: lineaOriginal.pvp_base,
-    total_linea: lineaOriginal.total_linea,
-    estatus_financiero: lineaOriginal.estatus_financiero,
-    estatus_operacional: lineaOriginal.estatus_operacional,
-    config_hash: lineaOriginal.config_hash,
-    ...overrides,
-  };
+    const snapshot = {
+        ticket_id: lineaOriginal.ticket_id,
+        line_group_uuid: lineaOriginal.line_group_uuid,
 
-  delete snapshot.total_linea;
-  snapshot.total_linea = Number(
-    (snapshot.cantidad * snapshot.pvp).toFixed(2)
-  );
+        producto_id: lineaOriginal.producto_id,
+        nombre_producto: lineaOriginal.nombre_producto,
 
-  const [[lineaActual]] = await conn.execute(
-    `
-      SELECT
-        id,
-        lifecycle_status,
-        superseded_by_linea_id
-      FROM ticket_lineas
-      WHERE id = ?
-      FOR UPDATE
-    `,
-    [lineaOriginal.id],
-  );
+        cantidad: lineaOriginal.cantidad,
 
-  if (!lineaActual) {
-    throw new Error(
-      `Línea ${lineaOriginal.id} no encontrada`
-    );
-  }
+        precio_unitario: lineaOriginal.precio_unitario,
+        precio_base: lineaOriginal.precio_base,
 
-  if (lineaActual.lifecycle_status !== 'activo') {
-    throw new Error(
-      `La línea ${lineaOriginal.id} no está activa`
-    );
-  }
+        total_linea: lineaOriginal.total_linea,
 
-  if (lineaActual.superseded_by_linea_id) {
-    throw new Error(
-      `La línea ${lineaOriginal.id} ya fue reemplazada`
-    );
-  }
+        estado_operacional: lineaOriginal.estado_operacional,
+        estado_financiero: lineaOriginal.estado_financiero,
 
-  // =====================================
-  // INSERT NUEVO SNAPSHOT
-  // =====================================
+        estado_snapshot: "activa",
 
-  const [inserted] = await conn.execute(
-    `
-      INSERT INTO ticket_lineas
-      (
-        line_group_uuid,
-        ticket_id,
-        producto_id,
-        nombre_producto,
-        cantidad,
-        pvp,
-        pvp_base,
-        total_linea,
-        estatus_financiero,
-        estatus_operacional,
-        lifecycle_status,
-        config_hash,
-        previous_linea_id,
-        created_by_action_uuid
-      )
-      VALUES
-      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?, ?, ?)
-      `,
-    [
-      snapshot.line_group_uuid,
-      snapshot.ticket_id,
-      snapshot.producto_id,
-      snapshot.nombre_producto,
-      snapshot.cantidad,
-      snapshot.pvp,
-      snapshot.pvp_base,
-      snapshot.total_linea,
-      snapshot.estatus_financiero,
-      snapshot.estatus_operacional,
-      snapshot.config_hash,
-      lineaOriginal.id,
-      createdByActionUuid
-    ],
-  );
+        config_hash: lineaOriginal.config_hash,
 
-  const nuevaLineaId = inserted.insertId;
+        ...cambios,
+    };
 
-  // =====================================
-  // INVALIDAR ORIGINAL
-  // =====================================
+    // =====================================
+    // INSERT NUEVA LÍNEA
+    // =====================================
 
-  const [updateResult] = await conn.execute(
-    `
-  UPDATE ticket_lineas
-  SET
-    lifecycle_status = 'anulado',
-    superseded_by_linea_id = ?
-  WHERE id = ?
-    AND superseded_by_linea_id IS NULL
-    AND lifecycle_status = 'activo'
-  `,
-    [nuevaLineaId, lineaOriginal.id],
-  );
-
-  if (updateResult.affectedRows !== 1) {
-    throw new Error(
-      `La línea ${lineaOriginal.id} ya fue reemplazada`
-    );
-  }
-
-  // =====================================
-  // COPIAR PROPIEDADES
-  // =====================================
-
-  await conn.execute(
-    `
-    INSERT INTO
-      ticket_linea_propiedades
+    const [insertado] = await conn.execute(
+        `
+    INSERT INTO ticket_lineas
     (
-      ticket_linea_id,
-      propiedad_id,
-      precio_delta
+      ticket_id,
+      line_group_uuid,
+
+      producto_id,
+      nombre_producto,
+
+      cantidad,
+
+      precio_unitario,
+      precio_base,
+
+      total_linea,
+
+      estado_operacional,
+      estado_financiero,
+
+      estado_snapshot,
+
+      config_hash
     )
-
-    SELECT
-      ?,
-      propiedad_id,
-      precio_delta
-
-    FROM ticket_linea_propiedades
-
-    WHERE ticket_linea_id = ?
+    VALUES
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
-    [nuevaLineaId, lineaOriginal.id],
-  );
+        [
+            snapshot.ticket_id,
+            snapshot.line_group_uuid,
 
-  return {
-    nuevaLineaId,
-    snapshot
-  };
+            snapshot.producto_id,
+            snapshot.nombre_producto,
+
+            snapshot.cantidad,
+
+            snapshot.precio_unitario,
+            snapshot.precio_base,
+
+            snapshot.total_linea,
+
+            snapshot.estado_operacional,
+            snapshot.estado_financiero,
+
+            snapshot.estado_snapshot,
+
+            snapshot.config_hash,
+        ],
+    );
+
+    const nuevaLineaId = insertado.insertId;
+
+    // =====================================
+    // INVALIDAMOS ORIGINAL
+    // =====================================
+
+    await conn.execute(
+        `
+        UPDATE ticket_lineas
+        SET estado_snapshot = 'invalidada'
+        WHERE id = ?
+        `,
+        [lineaOriginal.id],
+    );
+
+    // =====================================
+    // DEVOLVEMOS NUEVA LÍNEA
+    // =====================================
+
+    return nuevaLineaId;
 }
