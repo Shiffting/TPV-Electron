@@ -8,8 +8,8 @@ export const AddLineaSchema = z.object({
   productoId: z.number(),
   nombreProducto: z.string(),
   cantidad: z.number().optional(),
-  pvp: z.coerce.number(),
-  pvpBase: z.coerce.number(),
+  precio: z.coerce.number(),
+  pvpUnitario: z.coerce.number(),
   propiedades: z
     .array(
       z.object({

@@ -3,7 +3,7 @@ import { Router } from "express";
 import { crearMesa } from "../../domain/mesas/crearMesa.js";
 import { editarMesa } from "../../domain/mesas/editarMesa.js";
 import { eliminarMesa } from "../../domain/mesas/eliminarMesa.js";
-import { obtenerMesa } from "../../projections/mesas/obtenerMesa.js";
+//import { obtenerMesa } from "../../projections/mesas/obtenerMesa.js";
 import { obtenerMesas } from "../../projections/mesas/obtenerMesas.js";
 
 const r = Router();

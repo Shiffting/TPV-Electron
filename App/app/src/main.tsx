@@ -12,7 +12,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Mesas from "./pages/Mesas";
 import Ticket from "./pages/Ticket";
-import Cocina from "./pages/Cocina";
+import Estaciones from "./pages/Estaciones";
 import Shell from "./shell/Shell";
 
 import { getToken } from "./state/auth";
@@ -52,8 +52,8 @@ const router = createHashRouter([
       },
 
       {
-        path: "cocina",
-        element: <Cocina />,
+        path: "estaciones",
+        element: <Estaciones />,
       },
     ],
   },

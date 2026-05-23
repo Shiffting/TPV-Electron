@@ -1,10 +1,8 @@
 import { Router } from "express";
 
-import { crearUsuario } from "../../domain/usuarios/crearUsuario.js";
-import { editarUsuario } from "../../domain/usuarios/editarUsuario.js";
-import { desactivarUsuario } from "../../domain/usuarios/desactivarUsuario.js";
-import { obtenerUsuario } from "../../projections/usuarios/obtenerUsuario.js";
-import { obtenerUsuarios } from "../../projections/usuarios/obtenerUsuarios.js";
+//import { desactivarUsuario } from "../../domain/usuarios/desactivarUsuario.js";
+//import { obtenerUsuario } from "../../projections/usuarios/obtenerUsuario.js";
+//import { obtenerUsuarios } from "../../projections/usuarios/obtenerUsuarios.js";
 
 const r = Router();
 

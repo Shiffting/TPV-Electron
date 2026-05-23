@@ -2,6 +2,14 @@ import { pool } from "../../src/db/pool.js";
 
 import { cargarTicket } from "../helpers/cargarTicket.js";
 import { validarVersionTicket } from "../helpers/validarVersionTicket.js";
+import { adjuntarAccionDeTicket } from "../../services/actionService.js";
+import { recalcularTotalesTicket } from "../helpers/recalcularTotalesTicket.js";
+import { incrementarVersionTicket } from "../helpers/incrementarVersionTicket.js";
+import { cargarLineaTicket } from "../helpers/cargarLineaTicket.js";
+import { validarLineaEditable } from "../helpers/validarLineaEditable.js";
+import { crearSnapshotLinea } from "../helpers/crearSnapshotLinea.js";
+import { io } from "../../src/app.js";
+import { recalcularEstadoFinancieroTicket } from "../helpers/recalcularEstadoFinancieroTicket.js";
 
 export async function editarTicket({
     ticketId,
@@ -30,8 +38,7 @@ export async function editarTicket({
 
         // ACCIONES
         switch (accion) {
-            case "agregar_linea":
-
+            case "agregar_linea": {
                 // DATOS
                 const {
                     productoId,
@@ -65,7 +72,7 @@ export async function editarTicket({
                 );
 
                 const precioUnitario = Number(producto.precio) + extras;
-                const totalLinea = precioUnitario * cantidad;
+                const subTotal = precioUnitario * cantidad;
 
                 // CONFIG HASH
                 const configHash = [
@@ -95,9 +102,9 @@ export async function editarTicket({
 
                       total_linea,
 
-                      estado_financiero,
-                      estado_operacional,
-                      estado_snapshot,
+                      estatus_financiero,
+                      estatus_operacional,
+                      lifecycle_status,
 
                       config_hash
                     )
@@ -115,9 +122,9 @@ export async function editarTicket({
                         precioUnitario,
                         producto.precio,
 
-                        totalLinea,
+                        subTotal,
 
-                        "sin_pagar",
+                        "pendiente",
                         "pendiente",
                         "activo",
 
@@ -125,7 +132,7 @@ export async function editarTicket({
                     ],
                 );
 
-                const lineaId = insertada.insertId;
+                const nuevaLineaId = insertada.insertId;
 
                 // =====================================
                 // PROPIEDADES
@@ -143,7 +150,7 @@ export async function editarTicket({
                         VALUES (?, ?, ?)
                         `,
                         [
-                            lineaId,
+                            nuevaLineaId,
                             prop.propiedadId,
                             prop.precioDelta || 0,
                         ],
@@ -156,6 +163,11 @@ export async function editarTicket({
                     ticketId,
                 });
 
+                await recalcularEstadoFinancieroTicket({
+                    conn,
+                    ticketId,
+                });
+
                 // NUEVA VERSIÓN
                 const nuevaVersion =
                     await incrementarVersionTicket({
@@ -164,21 +176,22 @@ export async function editarTicket({
                     });
 
                 // ACCIÓN
-                await adjuntarAccionATicket({
+                await adjuntarAccionDeTicket({
                     conn,
                     ticketId,
                     tipoAccion: "LINEA_AGREGADA",
                     usuarioId,
                     version: nuevaVersion,
                     payload: {
-                        lineaId,
+                        nuevaLineaId,
                         productoId,
                         cantidad,
                     },
                 });
                 break;
+            }
 
-            case "editar_linea":
+            case "editar_linea": {
 
                 // DATOS
                 const {
@@ -206,7 +219,7 @@ export async function editarTicket({
 
                 const precioUnitario = Number(lineaOriginal.precio_base) + extras;
                 const nuevaCantidad = cantidad ?? lineaOriginal.cantidad;
-                const totalLinea = precioUnitario * nuevaCantidad;
+                const subTotal = precioUnitario * nuevaCantidad;
 
                 // CONFIG HASH
                 const configHash = [
@@ -224,7 +237,7 @@ export async function editarTicket({
                         cambios: {
                             cantidad: nuevaCantidad,
                             precio_unitario: precioUnitario,
-                            total_linea: totalLinea,
+                            total_linea: subTotal,
                             config_hash: configHash,
                         },
                     });
@@ -258,6 +271,11 @@ export async function editarTicket({
                     ticketId,
                 });
 
+                await recalcularEstadoFinancieroTicket({
+                    conn,
+                    ticketId,
+                });
+
                 // NUEVA VERSIÓN
                 const nuevaVersion =
                     await incrementarVersionTicket({
@@ -266,7 +284,7 @@ export async function editarTicket({
                     });
 
                 // ACCIÓN
-                await adjuntarAccionATicket({
+                await adjuntarAccionDeTicket({
                     conn,
                     ticketId,
                     tipoAccion: "LINEA_EDITADA",
@@ -278,13 +296,12 @@ export async function editarTicket({
                     },
                 });
                 break;
+            }
 
-            case "eliminar_linea":
+            case "eliminar_linea": {
 
                 // DATOS
-                const {
-                    lineaId,
-                } = payload;
+                const { lineaId } = payload;
 
                 const lineaOriginal =
                     await cargarLineaTicket({
@@ -300,12 +317,17 @@ export async function editarTicket({
                         conn,
                         lineaOriginal,
                         cambios: {
-                            estado_operacional: "cancelado",
+                            estatus_operacional: "cancelado",
                         },
                     });
 
                 // RECALCULAR
                 await recalcularTotalesTicket({
+                    conn,
+                    ticketId,
+                });
+
+                await recalcularEstadoFinancieroTicket({
                     conn,
                     ticketId,
                 });
@@ -318,7 +340,7 @@ export async function editarTicket({
                     });
 
                 // ACCIÓN
-                await adjuntarAccionATicket({
+                await adjuntarAccionDeTicket({
                     conn,
                     ticketId,
                     tipoAccion: "LINEA_CANCELADA",
@@ -331,8 +353,9 @@ export async function editarTicket({
                 });
 
                 break;
+            }
 
-            case "enviar_cocina":
+            case "enviar_cocina": {
 
                 // LÍNEAS PENDIENTES
                 const [lineas] = await conn.query(
@@ -340,8 +363,8 @@ export async function editarTicket({
                     SELECT *
                     FROM ticket_lineas
                     WHERE ticket_id = ?
-                      AND estado_snapshot = 'activo'
-                      AND estado_operacional = 'pendiente'
+                      AND lifecycle_status = 'activo'
+                      AND estatus_operacional = 'pendiente'
                     `,
                     [ticketId],
                 );
@@ -351,7 +374,7 @@ export async function editarTicket({
                     await conn.execute(
                         `
                         UPDATE ticket_lineas
-                        SET estado_operacional = 'enviado'
+                        SET estatus_operacional = 'enviado'
                         WHERE id = ?
                         `,
                         [linea.id],
@@ -366,7 +389,7 @@ export async function editarTicket({
                     });
 
                 // ACCIÓN
-                await adjuntarAccionATicket({
+                await adjuntarAccionDeTicket({
                     conn,
                     ticketId,
                     tipoAccion: "TICKET_ENVIADO_COCINA",
@@ -377,102 +400,157 @@ export async function editarTicket({
                     },
                 });
                 break;
+            }
 
-            case "agregar_pago":
+            case "agregar_pago": {
 
+                // =====================================
                 // DATOS
+                // =====================================
+
                 const {
                     metodoPagoId,
                     importe,
+                    lineas = [],
                 } = payload;
 
+                // =====================================
                 // INSERT PAGO
-                await conn.execute(
-                    `
-                    INSERT INTO pagos
-                    (
-                      ticket_id,
-                      metodo_pago_id,
-                      importe
-                    )
-                    VALUES (?, ?, ?)
-                    `,
-                    [
-                        ticketId,
-                        metodoPagoId,
-                        importe,
-                    ],
-                );
-
-                // =====================================
-                // TOTAL PAGADO
                 // =====================================
 
-                const [[pagos]] = await conn.query(
-                    `
-                    SELECT
-                      COALESCE(SUM(importe), 0) AS total
-                    FROM pagos
-                    WHERE ticket_id = ?
-                    `,
-                    [ticketId],
-                );
+                const [insertPago] =
+                    await conn.execute(
+                        `
+                        INSERT INTO pagos
+                        (
+                            ticket_id,
+                            metodo_id,
+                            importe
+                        )
+                        VALUES (?, ?, ?)
+                        `,
+                        [
+                            ticketId,
+                            metodoPagoId,
+                            importe,
+                        ],
+                    );
 
-                const totalPagado = Number(pagos.total);
-
-                // =====================================
-                // TOTAL TICKET
-                // =====================================
-
-                const [[ticketActual]] = await conn.query(
-                    `
-                    SELECT total
-                    FROM tickets
-                    WHERE id = ?
-                    LIMIT 1
-                    `,
-                    [ticketId],
-                );
+                const pagoId =
+                    insertPago.insertId;
 
                 // =====================================
-                // NUEVO ESTADO
+                // ALLOCATIONS
                 // =====================================
 
-                let estadoFinanciero = "sin_pagar";
-
-                if (totalPagado > 0) {
-                    estadoFinanciero = "parcial";
-                }
-
-                if (totalPagado >= Number(ticketActual.total)) {
-                    estadoFinanciero = "pagado";
+                for (const linea of lineas) {
+                    await conn.execute(
+                        `
+                        INSERT INTO
+                        payment_allocations
+                        (
+                            pago_id,
+                            ticket_linea_id,
+                            importe
+                        )
+                        VALUES (?, ?, ?)
+                        `,
+                        [
+                            pagoId,
+                            linea.lineaId,
+                            linea.importe,
+                        ],
+                    );
                 }
 
                 // =====================================
-                // UPDATE TICKET
+                // RECALCULAR LÍNEAS
                 // =====================================
 
-                await conn.execute(
-                    `
-                    UPDATE tickets
-                    SET estado_financiero = ?
-                    WHERE id = ?
-                    `,
-                    [
-                        estadoFinanciero,
-                        ticketId,
-                    ],
-                );
+                const [lineasTicket] =
+                    await conn.query(
+                        `
+                        SELECT
+                            id,
+                            total_linea
+                        FROM ticket_lineas
+                        WHERE ticket_id = ?
+                          AND lifecycle_status = 'activo'
+                          AND estatus_operacional != 'cancelado'
+                        `,
+                        [ticketId],
+                    );
 
+                for (const linea of lineasTicket) {
+
+                    const [[alloc]] =
+                        await conn.query(
+                            `
+                            SELECT
+                                COALESCE(
+                                    SUM(importe),
+                                    0
+                                ) AS total
+                            FROM payment_allocations
+                            WHERE ticket_linea_id = ?
+                            `,
+                            [linea.id],
+                        );
+
+                    const pagado =
+                        Number(alloc.total);
+
+                    const totalLinea =
+                        Number(linea.total_linea);
+
+                    let estado =
+                        "pendiente";
+
+                    if (pagado > 0) {
+                        estado = "parcial";
+                    }
+
+                    if (pagado >= totalLinea) {
+                        estado = "pagado";
+                    }
+
+                    await conn.execute(
+                        `
+                        UPDATE ticket_lineas
+                        SET estatus_financiero = ?
+                        WHERE id = ?
+                        `,
+                        [
+                            estado,
+                            linea.id,
+                        ],
+                    );
+                }
+
+                // =====================================
+                // RECALCULAR TICKET
+                // =====================================
+
+                await recalcularEstadoFinancieroTicket({
+                    conn,
+                    ticketId,
+                });
+
+                // =====================================
                 // NUEVA VERSIÓN
+                // =====================================
+
                 const nuevaVersion =
                     await incrementarVersionTicket({
                         conn,
                         ticketId,
                     });
 
+                // =====================================
                 // ACCIÓN
-                await adjuntarAccionATicket({
+                // =====================================
+
+                await adjuntarAccionDeTicket({
                     conn,
                     ticketId,
                     tipoAccion: "PAGO_AGREGADO",
@@ -483,9 +561,11 @@ export async function editarTicket({
                         importe,
                     },
                 });
-                break;
 
-            case "cerrar_ticket":
+                break;
+            }
+
+            case "cerrar_ticket": {
 
                 // RECARGAR TICKET
                 const ticketActual =
@@ -495,7 +575,7 @@ export async function editarTicket({
                     });
 
                 // VALIDAR PAGADO
-                if (ticketActual.estado_financiero !== "pagado") {
+                if (ticketActual.estatus_financiero !== "pagado") {
                     throw new Error("TICKET_NO_PAGADO");
                 }
 
@@ -520,7 +600,7 @@ export async function editarTicket({
                     });
 
                 // ACCIÓN
-                await adjuntarAccionATicket({
+                await adjuntarAccionDeTicket({
                     conn,
                     ticketId,
                     tipoAccion: "TICKET_CERRADO",
@@ -529,12 +609,18 @@ export async function editarTicket({
                     payload: {},
                 });
                 break;
+            }
 
             default:
                 throw new Error("ACCION_INVALIDA");
         }
 
         await conn.commit();
+
+        io.to(`ticket:${ticketId}`)
+            .emit(
+                "ticket:update",
+            );
 
         return {
             ok: true,

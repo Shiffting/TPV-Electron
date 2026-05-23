@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 export async function adjuntarAccionDeTicket({
   conn = null,
   ticketId,
-  actionType,
+  tipoAccion,
   payload,
   actorUserId = null,
   deviceId = null,
@@ -35,7 +35,7 @@ export async function adjuntarAccionDeTicket({
       commandUuid,
       aggregateVersion,
       ticketId,
-      actionType,
+      tipoAccion,
       JSON.stringify(payload),
       actorUserId,
       deviceId,

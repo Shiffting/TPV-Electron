@@ -11,7 +11,7 @@ export default function Shell() {
   const token = getToken();
 
   if (!token) {
-    return <Navigate to="/pin" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return (

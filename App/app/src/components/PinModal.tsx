@@ -15,9 +15,7 @@ export default function PinModal({
   onClose,
 }: Props) {
   const [pin, setPin] = useState("");
-
   const [loading, setLoading] = useState(false);
-
   const [error, setError] = useState("");
 
   function addDigit(digit: string) {

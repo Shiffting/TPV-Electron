@@ -65,6 +65,7 @@ r.post("/", async (req, res) => {
 
 r.patch("/:ticketId", async (req, res) => {
   try {
+    console.log(req.body);
     const result = await editarTicket({
       ticketId: Number(req.params.ticketId),
       accion: req.body.accion,

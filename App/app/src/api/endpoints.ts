@@ -1,155 +1,258 @@
 import { api } from "./client";
 
-// Auth
-export async function login(username: string, password: string) {
-  const { data } = await api.post("/auth/login", { username, password });
-  return data;
-}
+/* =========================================
+   AUTH
+========================================= */
 
-// Mesas
-export async function getMesas() {
-  const { data } = await api.get("/mesas");
-  return data;
-}
-
-// Tickets
-export async function crearTicket(mesaId?: number) {
-  const { data } = await api.post("/tickets", { mesaId });
-  return data;
-}
-export async function getTicket(id: number) {
-  const { data } = await api.get(`/tickets/${id}`);
-  return data;
-}
-export async function addLinea(ticketId: number, payload: any) {
-  const { data } = await api.post(`/tickets/${ticketId}/lineas`, payload);
-  return data;
-}
-export async function pagarParcial(ticketId: number, payload: any) {
-  const { data } = await api.post(
-    `/tickets/${ticketId}/pagar-parcial`,
-    payload,
-  );
-  return data;
-}
-
-// KPIs
-export async function getKpis() {
-  const { data } = await api.get("/report/kpis");
-  return data;
-}
-
-// Caja
-export async function cajaAbrir(efectivoInicial = 0) {
-  const { data } = await api.post("/caja/abrir", { efectivoInicial });
-  return data;
-}
-export async function cajaMovimiento(payload: any) {
-  const { data } = await api.post("/caja/movimiento", payload);
-  return data;
-}
-export async function cajaAbierta() {
-  const { data } = await api.get("/caja/abierta");
-  return data;
-}
-export async function cajaCerrar(payload: any) {
-  const { data } = await api.post("/caja/cerrar", payload);
-  return data;
-}
-
-// Categorías
-export async function getCategorias() {
-  const { data } = await api.get("/categorias");
-  return data;
-}
-
-// Productos
-export async function getProductos() {
-  const { data } = await api.get("/productos");
-  return data;
-}
-
-// Restar unidad de línea
-export async function decLinea(lineaId: number) {
-  const { data } = await api.post(`/tickets/lineas/${lineaId}/decrementar`);
-  return data;
-}
-
-//Ticket Mesa Abierta
-export const getTicketAbiertoMesa = async (mesaId: number) => {
-  const { data } = await api.get(`/mesas/${mesaId}/ticket-abierto`);
-  return data;
-};
-
-//Cobrar y cerrar ticket
-export async function cerrarTicket(ticketId: number) {
-  const { data } = await api.post(`/tickets/${ticketId}/cerrar`);
-  return data;
-}
-
-//Conseguir las propiedades de un producto
-export async function getPropiedadesProducto(productoId: number) {
-  const { data } = await api.get(`/productos/${productoId}/propiedades`);
-
-  return data;
-}
-
-//Modificar propiedades de producto en ticket
-export async function updateLinea(lineaId: number, data: any) {
-  const res = await api.patch(`/tickets/lineas/${lineaId}`, data);
-
-  return res.data;
-}
-
-//Listar estaciones
-export async function getEstaciones() {
-  const res = await api.get("/estaciones");
-
-  return res.data;
-}
-
-//Recoger cocina y cambiar estados
-export async function getCocina() {
-  const res = await api.get("/cocina");
-
-  return res.data;
-}
-
-export async function cambiarEstadoCocina(
-  lineaId: number,
-  estadoOperativo: string,
+export async function login(
+  email: string,
+  password: string,
 ) {
-  await api.patch(`/cocina/${lineaId}/estado`, {
-    estadoOperativo,
+  const { data } = await api.post(
+    "/auth/login",
+    {
+      email,
+      password,
+    },
+  );
+
+  return data;
+}
+
+/* =========================================
+   //TICKETS
+========================================= */
+
+export async function crearTicket(
+  mesaId?: number,
+) {
+  const { data } = await api.post(
+    "/tickets",
+    {
+      mesaId,
+    },
+  );
+
+  return data;
+}
+
+export async function getTicket(
+  ticketId: number,
+) {
+  const { data } = await api.get(
+    `/tickets/${ticketId}`,
+  );
+
+  return data;
+}
+
+export async function getTickets() {
+  const { data } = await api.get(
+    "/tickets",
+  );
+
+  return data;
+}
+
+//EDITAR TICKET
+export async function editarTicket(
+  ticketId: number,
+  body: {
+    accion: string;
+    payload?: any;
+    version?: number;
+  },
+) {
+  const { data } = await api.patch(
+    `/tickets/${ticketId}`,
+    body,
+  );
+
+  return data;
+}
+
+//AÑADIR LÍNEA
+export async function addLinea(
+  ticketId: number,
+  payload: any,
+  version: number,
+) {
+  return editarTicket(ticketId, {
+    accion: "agregar_linea",
+    payload,
+    version,
   });
 }
 
-//Logueo rápido con PIN
-export async function loginPIN(pin: string) {
-  const { data } = await api.post("/auth/pin", { pin });
-
-  return data;
-}
-
-//Bloquear mesa
-export async function lockMesa(mesaId: number) {
-  const { data } = await api.post(`/mesas/${mesaId}/lock`);
-
-  return data;
-}
-
-//Desbloquear mesa
-export async function unlockMesa(mesaId: number) {
-  const { data } = await api.post(`/mesas/${mesaId}/unlock`);
-
-  return data;
-}
-
-//Renovamos Lock periodicamente
-export async function pingMesaLock(
-  mesaId: number,
+//EDITAR LÍNEA
+export async function updateLinea(
+  ticketId: number,
+  lineaId: number,
+  propiedades: any[],
+  version: number,
 ) {
-  await api.post(
-    `/mesas/${mesaId}/ping-lock`,
+  return editarTicket(ticketId, {
+    accion: "editar_linea",
+    version,
+
+    payload: {
+      lineaId,
+      propiedades,
+    },
+  });
+}
+
+//ELIMINAR LÍNEA
+export async function eliminarLinea(
+  ticketId: number,
+  lineaId: number,
+  version: number,
+) {
+  return editarTicket(ticketId, {
+    accion: "eliminar_linea",
+    version,
+    payload: {
+      lineaId,
+    },
+  });
+}
+
+//ENVIAR COCINA
+export async function enviarCocina(
+  ticketId: number,
+  version: number,
+) {
+  return editarTicket(ticketId, {
+    accion: "enviar_cocina",
+    version,
+  });
+}
+
+//AGREGAR PAGO
+export async function agregarPago(
+  ticketId: number,
+  payload: {
+    metodoPagoId: number;
+    importe: number;
+    lineas: {
+      lineaId: number;
+      importe: number;
+    }[];
+  },
+  version: number,
+) {
+  return editarTicket(ticketId, {
+    accion: "agregar_pago",
+    version,
+    payload,
+  });
+}
+
+//PROCESAR COBRO
+export async function procesarCobro(
+  ticketId: number,
+  payload: any,
+  version: number,
+) {
+  return editarTicket(ticketId, {
+    accion: "procesar_cobro",
+    version,
+    payload,
+  });
+}
+
+//CERRAR TICKET
+export async function cerrarTicket(
+  ticketId: number,
+  version: number,
+) {
+  return editarTicket(ticketId, {
+    accion: "cerrar_ticket",
+    version,
+  });
+}
+
+//MESAS
+export async function getMesas() {
+  const { data } = await api.get(
+    "/mesas",
   );
+
+  return data;
+}
+
+//PRODUCTOS
+export async function getProductos() {
+  const { data } = await api.get(
+    "/productos",
+  );
+
+  return data;
+}
+
+
+//Propiedades de producto
+export async function getPropiedadesProducto(
+  productoId: number,
+) {
+
+  const { data } = await api.get(
+    `/productos/${productoId}/propiedades`,
+  );
+
+  return data;
+}
+
+//CATEGORÍAS
+export async function getCategorias() {
+  const { data } = await api.get(
+    "/categorias",
+  );
+
+  return data;
+}
+
+/* =========================================
+   ESTACIONES
+========================================= */
+
+export async function getEstaciones() {
+  const { data } = await api.get(
+    "/estaciones",
+  );
+
+  return data;
+}
+
+export async function getEstacion(
+  estacionId: number,
+) {
+
+  const { data } = await api.get(
+    `/estaciones/${estacionId}`,
+  );
+
+  return data;
+}
+
+export async function cambiarEstadoEstacion(
+  lineaId: number,
+  estado: string,
+) {
+
+  const { data } = await api.patch(
+    `/lineas/${lineaId}/estado`,
+    {
+      estado,
+    },
+  );
+
+  return data;
+}
+
+//Dashboard
+export async function getKpis() {
+  const res = await api.get("/reportes/dashboard");
+
+  return res.data;
 }

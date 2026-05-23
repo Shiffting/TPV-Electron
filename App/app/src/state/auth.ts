@@ -2,41 +2,57 @@
 
 const getTPV = () => window.tpv;
 
-export function setBaseURL(url: string) {
-  const tpv = getTPV();
-  if (tpv) {
-    tpv.set('baseURL', url);
-  } else {
-    console.error('No se pudo guardar baseURL: tpv no disponible');
-  }
+/* =========================================
+   BASE URL
+========================================= */
+
+export function setBaseURL(
+  url: string,
+) {
+
+  localStorage.setItem(
+    "baseURL",
+    url,
+  );
 }
 
-export function getBaseURL(): string {
-  const tpv = getTPV();
-  if (tpv) {
-    return (tpv.get('baseURL') as string) || 'http://localhost:8080';
-  }
-  return 'http://localhost:8080';
+export function getBaseURL() {
+
+  return (
+    localStorage.getItem(
+      "baseURL",
+    ) ||
+    "http://localhost:8080"
+  );
 }
 
-export function setToken(token: string) {
-  const tpv = getTPV();
-  if (tpv) {
-    tpv.set('token', token);
-    console.log('💾 Token guardado en store');
-  }
+/* =========================================
+   TOKEN
+========================================= */
+
+export function setToken(
+  token: string,
+) {
+
+  localStorage.setItem(
+    "tpv_token",
+    token,
+  );
 }
 
-export function getToken(): string | null {
-  const tpv = getTPV();
-  if (!tpv) return null;
-  return tpv.get('token') as string | null;
+export function getToken():
+  string | null {
+
+  return localStorage.getItem(
+    "tpv_token",
+  );
 }
 
-export function isTPVReady(): boolean {
-  return !!window.tpv;
-}
+/* =========================================
+   AUTH
+========================================= */
 
-export function isAuthenticated(): boolean {
+export function isAuthenticated() {
+
   return !!getToken();
 }

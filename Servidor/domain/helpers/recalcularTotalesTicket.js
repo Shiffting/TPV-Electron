@@ -14,8 +14,8 @@ export async function recalcularTotalesTicket({
     FROM ticket_lineas
 
     WHERE ticket_id = ?
-      AND estado_snapshot = 'activa'
-      AND estado_operacional != 'cancelado'
+      AND lifecycle_status = 'activo'
+      AND estatus_operacional != 'cancelado'
     `,
         [ticketId],
     );
@@ -29,7 +29,7 @@ export async function recalcularTotalesTicket({
     await conn.execute(
         `
     UPDATE tickets
-    SET total = ?
+    SET total_bruto = ?
     WHERE id = ?
     `,
         [

@@ -2,29 +2,31 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
+
 import "dotenv/config";
 import "express-async-errors";
+
 import http from "http";
+
 import { Server } from "socket.io";
 
-import mesasRouter from "./routes/mesas.js";
-import productosRouter from "./routes/productos.js";
-import ticketsRouter from "./routes/tickets.js";
-import pagosRouter from "./routes/pagos.js";
 import authRouter from "./routes/auth.js";
-import usuariosRouter from "./routes/usuarios.js";
+
+import ticketsRouter from "./routes/tickets.js";
+import productosRouter from "./routes/productos.js";
 import categoriasRouter from "./routes/categorias.js";
-import reportRouter from "./routes/report.js";
-import cajaRouter from "./routes/caja.js";
-import exportRouter from "./routes/export.js";
+import mesasRouter from "./routes/mesas.js";
 import estacionesRouter from "./routes/estaciones.js";
-import cocinaRouter from "./routes/cocina.js";
-
+import usuariosRouter from "./routes/usuarios.js";
+import reportesRouter from "./routes/reportes.js";
 import { authMiddleware } from "./lib/auth.js";
-import { requireFeature } from "./lib/requireFeature.js";
+import empleadosRoutes from "./routes/empleados.js";
 
-import { rlAuth, rlAPI } from "./lib/rateLimit.js";
-import { notFound, errorHandler } from "./lib/errors.js";
+
+import {
+  rlAuth,
+  rlAPI,
+} from "./lib/rateLimit.js";
 
 /* =========================================
    APP
@@ -33,10 +35,15 @@ import { notFound, errorHandler } from "./lib/errors.js";
 const app = express();
 
 /* =========================================
-   SOCKET.IO
+   SERVER HTTP
 ========================================= */
 
-const server = http.createServer(app);
+const server =
+  http.createServer(app);
+
+/* =========================================
+   SOCKET.IO
+========================================= */
 
 export const io = new Server(server, {
   cors: {
@@ -45,10 +52,15 @@ export const io = new Server(server, {
 });
 
 io.on("connection", (socket) => {
-  console.log("Cliente conectado:", socket.id);
+  console.log(
+    "Cliente conectado:",
+    socket.id,
+  );
 
   socket.on("disconnect", () => {
-    console.log("Cliente desconectado");
+    console.log(
+      "Cliente desconectado",
+    );
   });
 });
 
@@ -56,23 +68,32 @@ io.on("connection", (socket) => {
    CORS
 ========================================= */
 
-const allowed = (process.env.CORS_ORIGINS || "")
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
+const allowed =
+  (process.env.CORS_ORIGINS || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 
 app.use(
   cors({
     origin: (origin, cb) => {
+      // Electron / apps locales
       if (!origin) {
         return cb(null, true);
       }
 
-      if (!allowed.length || allowed.includes(origin)) {
+      if (
+        !allowed.length ||
+        allowed.includes(origin)
+      ) {
         return cb(null, true);
       }
 
-      return cb(new Error("CORS bloqueado: " + origin));
+      return cb(
+        new Error(
+          "CORS bloqueado: " + origin,
+        ),
+      );
     },
 
     credentials: true,
@@ -89,66 +110,94 @@ app.use(express.json());
 
 app.use(morgan("dev"));
 
-if (process.env.NODE_ENV === "production") {
+if (
+  process.env.NODE_ENV ===
+  "production"
+) {
   app.use(rlAPI);
 }
 
 app.use("/auth", rlAuth);
 
 /* =========================================
-   PUBLIC ROUTES
+   HEALTHCHECK
+========================================= */
+
+app.get("/health", (_, res) => {
+  res.json({
+    ok: true,
+    ts: new Date().toISOString(),
+  });
+});
+
+/* =========================================
+   RUTAS PÚBLICAS
 ========================================= */
 
 app.use("/auth", authRouter);
 
-app.get("/health", (_, res) =>
-  res.json({
-    ok: true,
-    ts: new Date().toISOString(),
-  }),
+/* =========================================
+   RUTAS PROTEGIDAS
+========================================= */
+
+app.use(
+  "/tickets",
+  authMiddleware,
+  ticketsRouter,
+);
+
+app.use(
+  "/productos",
+  authMiddleware,
+  productosRouter,
+);
+
+app.use(
+  "/categorias",
+  authMiddleware,
+  categoriasRouter,
+);
+
+app.use(
+  "/mesas",
+  authMiddleware,
+  mesasRouter,
+);
+
+app.use(
+  "/estaciones",
+  authMiddleware,
+  estacionesRouter,
+);
+
+app.use(
+  "/usuarios",
+  authMiddleware,
+  usuariosRouter,
+);
+
+app.use(
+  "/reportes",
+  authMiddleware,
+  reportesRouter,
+);
+
+app.use(
+  "/empleados",
+  empleadosRoutes,
 );
 
 /* =========================================
-   PROTECTED ROUTES
+   ERROR GLOBAL
 ========================================= */
-
-app.use("/tickets", authMiddleware, ticketsRouter);
-
-app.use("/pagos", authMiddleware, pagosRouter);
-
-app.use("/usuarios", authMiddleware, usuariosRouter);
-
-app.use("/mesas", authMiddleware, mesasRouter);
-
-app.use("/productos", authMiddleware, productosRouter);
-
-app.use("/categorias", authMiddleware, categoriasRouter);
-
-app.use("/caja", authMiddleware, cajaRouter);
-
-app.use("/export", authMiddleware, exportRouter);
-
-app.use("/estaciones", authMiddleware, estacionesRouter);
-
-/* =========================================
-   FEATURE ROUTES
-========================================= */
-
-app.use("/cocina", authMiddleware, requireFeature("kitchen"), cocinaRouter);
-
-app.use("/report", authMiddleware, requireFeature("dashboard"), reportRouter);
-
-// =====================================
-// ERROR HANDLER GLOBAL
-// =====================================
 
 app.use((err, req, res, next) => {
-  console.error("ERROR GLOBAL:");
+  console.error("ERROR GLOBAL");
+
   console.error(err);
 
   res.status(500).json({
     error: err.message,
-    stack: err.stack,
   });
 });
 
@@ -156,8 +205,12 @@ app.use((err, req, res, next) => {
    START
 ========================================= */
 
-const port = Number(process.env.PORT || 8080);
+const port = Number(
+  process.env.PORT || 8080,
+);
 
 server.listen(port, () => {
-  console.log(`TPV API escuchando en http://localhost:${port}`);
+  console.log(
+    `TPV API escuchando en http://localhost:${port}`,
+  );
 });

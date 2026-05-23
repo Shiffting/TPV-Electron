@@ -21,10 +21,10 @@ export async function crearSnapshotLinea({
 
         total_linea: lineaOriginal.total_linea,
 
-        estado_operacional: lineaOriginal.estado_operacional,
-        estado_financiero: lineaOriginal.estado_financiero,
+        estatus_operacional: lineaOriginal.estatus_operacional,
+        estatus_financiero: lineaOriginal.estatus_financiero,
 
-        estado_snapshot: "activa",
+        lifecycle_status: "activo",
 
         config_hash: lineaOriginal.config_hash,
 
@@ -52,10 +52,10 @@ export async function crearSnapshotLinea({
 
       total_linea,
 
-      estado_operacional,
-      estado_financiero,
+      estatus_operacional,
+      estatus_financiero,
 
-      estado_snapshot,
+      lifecycle_status,
 
       config_hash
     )
@@ -76,10 +76,10 @@ export async function crearSnapshotLinea({
 
             snapshot.total_linea,
 
-            snapshot.estado_operacional,
-            snapshot.estado_financiero,
+            snapshot.estatus_operacional,
+            snapshot.estatus_financiero,
 
-            snapshot.estado_snapshot,
+            snapshot.lifecycle_status,
 
             snapshot.config_hash,
         ],
@@ -94,7 +94,7 @@ export async function crearSnapshotLinea({
     await conn.execute(
         `
         UPDATE ticket_lineas
-        SET estado_snapshot = 'invalidada'
+        SET lifecycle_status = 'invalidada'
         WHERE id = ?
         `,
         [lineaOriginal.id],

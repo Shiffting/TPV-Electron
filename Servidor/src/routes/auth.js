@@ -1,8 +1,8 @@
 import { Router } from "express";
 
 import { login } from "../../domain/auth/login.js";
-import { logout } from "../../domain/auth/logout.js";
-import { obtenerSesionActual } from "../../projections/auth/obtenerSesionActual.js";
+//import { logout } from "../../domain/auth/logout.js";
+//import { obtenerSesionActual } from "../../projections/auth/obtenerSesionActual.js";
 
 const r = Router();
 
@@ -13,7 +13,7 @@ const r = Router();
 r.post("/login", async (req, res) => {
   try {
     const result = await login({
-      usuario: req.body.usuario,
+      email: req.body.email,
       password: req.body.password,
     });
 

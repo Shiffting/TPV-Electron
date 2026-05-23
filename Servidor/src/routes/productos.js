@@ -3,8 +3,9 @@ import { Router } from "express";
 import { crearProducto } from "../../domain/productos/crearProducto.js";
 import { editarProducto } from "../../domain/productos/editarProducto.js";
 import { eliminarProducto } from "../../domain/productos/eliminarProducto.js";
-import { obtenerProducto } from "../../projections/productos/obtenerProducto.js";
+//import { obtenerProducto } from "../../projections/productos/obtenerProducto.js";
 import { obtenerProductos } from "../../projections/productos/obtenerProductos.js";
+import {obtenerPropiedadesProducto} from "../../projections/productos/obtenerPropiedadesProducto.js";
 
 const r = Router();
 
@@ -96,3 +97,30 @@ r.delete("/:productoId", async (req, res) => {
 });
 
 export default r;
+
+/* =========================================
+   OBTENER PROPIEDADES
+========================================= */
+
+r.get(
+  "/:id/propiedades",
+  async (req, res) => {
+
+    try {
+
+      const props =
+        await obtenerPropiedadesProducto(
+          req.params.id,
+        );
+
+      res.json(props);
+
+    } catch (e) {
+
+      res.status(500).json({
+        error: e.message,
+      });
+
+    }
+  },
+);

@@ -1,8 +1,8 @@
 import { Router } from "express";
 
-import { obtenerDashboard } from "../../projections/reportes/obtenerDashboard.js";
-import { obtenerVentas } from "../../projections/reportes/obtenerVentas.js";
-import { obtenerProductosTop } from "../../projections/reportes/obtenerProductosTop.js";
+//import { obtenerDashboard } from "../../projections/reportes/obtenerDashboard.js";
+//import { obtenerVentas } from "../../projections/reportes/obtenerVentas.js";
+//import { obtenerProductosTop } from "../../projections/reportes/obtenerProductosTop.js";
 
 const r = Router();
 

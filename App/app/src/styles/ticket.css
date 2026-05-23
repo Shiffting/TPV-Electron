@@ -3,18 +3,12 @@
 ========================================================= */
 
 .ticket-page {
-    min-height: 100vh;
-
-    padding: 18px;
-
-    background: #f4f6fb;
-
-    box-sizing: border-box;
-
+    height: 100vh;
     overflow: hidden;
-
+    padding: 18px;
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
 }
 
 /* =========================================================
@@ -23,14 +17,11 @@
 
 .ticket-layout {
     flex: 1;
-
     display: flex;
     flex-direction: column;
-
     min-height: 0;
-
+    height: calc(100vh - 108px);
     overflow: hidden;
-
     padding-top: 16px;
 }
 
@@ -40,17 +31,12 @@
 
 .ticket-content {
     flex: 1;
-
-    display: grid;
-
-    grid-template-columns:
-        180px minmax(0, 1fr) 380px;
-
-    gap: 18px;
-
     min-height: 0;
+    height: 100%;
+    display: grid;
+    grid-template-columns: 180px minmax(0, 1fr) 360px;
+    gap: 18px;
     overflow: hidden;
-    margin-top: 12px;
 }
 
 
@@ -124,6 +110,20 @@
 
 .tpv-back-button:hover {
     opacity: 0.92;
+}
+
+.tpv-back-button.cobrar {
+    background: #111827;
+}
+
+.tpv-back-button.pagado {
+    background: #16a34a;
+
+    cursor: default;
+}
+
+.tpv-back-button.pagado:hover {
+    opacity: 1;
 }
 
 /* =========================================================
@@ -241,14 +241,11 @@
 
 .tpv-products-panel {
     background: white;
-
     border-radius: 28px;
-
     border: 1px solid #e5e7eb;
-
     padding: 18px;
-
     overflow-y: auto;
+    min-height: 0;
 }
 
 /* =========================================================
@@ -355,16 +352,13 @@
 ========================================================= */
 
 .tpv-ticket-panel {
-    background: white;
+    background: rgb(255, 253, 248);
     border-radius: 28px;
     border: 1px solid #e5e7eb;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-
-    box-shadow:
-        0 10px 30px rgba(0, 0, 0, 0.06);
-    min-height: 0;
+    height: calc(100vh - 140px);
 }
 
 /* =========================================================
@@ -372,18 +366,14 @@
 ========================================================= */
 
 .tpv-ticket-header {
-    height: 92px;
-
+    background: white;
+    height: 60px;
     padding: 0 24px;
-
     border-bottom: 1px solid #eef0f3;
-
     display: flex;
     align-items: center;
     justify-content: space-between;
-
     flex-shrink: 0;
-
 }
 
 .tpv-ticket-title {
@@ -417,11 +407,11 @@
 ========================================================= */
 
 .tpv-ticket-lines {
-    flex: 1;
     overflow-y: auto;
-    padding: 18px;
-    min-height: 0;
-    scrollbar-width: none;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .tpv-ticket-empty {
@@ -445,12 +435,6 @@
     min-width: 0;
 }
 
-.tpv-ticket-line-top {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
 .tpv-ticket-edit-icon {
     font-size: 12px;
 
@@ -468,22 +452,31 @@
 
 .tpv-ticket-line-qty {
     margin-top: 2px;
-
-    font-size: 14px;
+    font-family:
+        "Roboto Mono",
+        monospace;
+    font-weight: 700;
+    font-size: 13px;
+    flex-shrink: 0;
     color: #64748b;
 }
 
 .tpv-ticket-line-properties {
-    margin-top: 6px;
-
-    font-size: 13px;
-    line-height: 1.4;
-
-    color: #7c3aed;
-
+    margin-top: 2px;
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
+    flex-direction: column;
+    gap: 2px;
+    padding-left: 16px;
+}
+
+.tpv-ticket-line-properties span {
+    background: transparent;
+    padding: 0;
+    height: auto;
+    border-radius: 0;
+    font-size: 11px;
+    color: #6b7280;
+    font-weight: 500;
 }
 
 .tpv-ticket-line-right {
@@ -495,40 +488,34 @@
 }
 
 .tpv-ticket-line-price {
-    font-size: 22px;
-    font-weight: 800;
+    font-size: 16px;
+    font-weight: 700;
+    font-family:
+        "Roboto Mono",
+        monospace;
 
     color: #0f172a;
 }
 
 .tpv-ticket-swipe-wrapper {
     position: relative;
-
     overflow: hidden;
-
     border-radius: 20px;
-
     background: transparent;
+    touch-action: pan-y;
 }
 
 .tpv-ticket-delete-bg {
     position: absolute;
     inset: 0;
-
     display: flex;
     align-items: center;
     justify-content: flex-end;
-
     padding-right: 24px;
-
     background: #ef4444;
-
     color: white;
-
     font-size: 22px;
-
     opacity: 0;
-
     transition: opacity 0.15s ease;
 }
 
@@ -537,44 +524,43 @@
 }
 
 .tpv-ticket-line {
-    position: relative;
-    z-index: 2;
-
+    background: transparent;
+    border-bottom: 1px dashed #e5e7eb;
+    border-radius: 0;
+    padding: 10px 0;
     display: flex;
-    align-items: center;
     justify-content: space-between;
-
-    gap: 16px;
-
-    padding: 16px 18px;
-
-    background: #f8f8fb;
-
-    border: 1px solid #ececf3;
-    border-radius: 20px;
-
-    touch-action: pan-y;
-
-    user-select: none;
-
-    will-change: transform;
+    font-size: 14px;
+    font-weight: 600;
+    font-family:
+        "Roboto Mono",
+        monospace;
+    align-items: flex-start;
+    gap: 14px;
+    cursor: pointer;
 }
 
+.tpv-ticket-lines-container {
+    overflow: auto;
+    padding: 12px 16px;
+}
+
+.tpv-ticket-line-main {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
 
 /* =========================================================
    FOOTER TICKET
 ========================================================= */
 
 .tpv-ticket-footer {
-    border-top: 1px solid #eef0f3;
-
-    padding: 20px;
-
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-
     flex-shrink: 0;
+    padding: 18px;
+    border-top: 1px solid #ececec;
+    background: white;
+    margin-top: auto;
 }
 
 .hide-scrollbar::-webkit-scrollbar {
@@ -617,7 +603,6 @@
 .tpv-ticket-total-price {
     font-size: 42px;
     font-weight: 900;
-
     color: #0f172a;
 }
 
@@ -636,23 +621,23 @@
 }
 
 .tpv-actions {
-  display: grid;
+    display: grid;
 
-  grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, 1fr);
 
-  gap: 12px;
+    gap: 12px;
 }
 
 .tpv-summary-total span:first-child {
-  font-size: 18px;
+    font-size: 18px;
 }
 
 .tpv-summary-total span:last-child {
-  font-size: 42px;
+    font-size: 42px;
 
-  font-weight: 900;
+    font-weight: 900;
 
-  color: #0f172a;
+    color: #0f172a;
 }
 
 .tpv-summary-row {
@@ -671,4 +656,56 @@
     justify-content: space-between;
 
     gap: 18px;
+}
+
+.tpv-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+.tpv-modal {
+    width: 420px;
+    background: white;
+    border-radius: 24px;
+    padding: 24px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.tpv-modal-header {
+    margin-bottom: 20px;
+}
+
+.tpv-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.tpv-prop-button {
+    display: flex;
+    justify-content: space-between;
+    padding: 14px;
+    border-radius: 14px;
+    border: 1px solid #ddd;
+}
+
+.tpv-prop-button.active {
+    border: 2px solid #7c3aed;
+    background: #f3e8ff;
+}
+
+.tpv-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
 }

@@ -1,70 +1,119 @@
-import { useState, useEffect } from "react";
-import { login } from "../api/endpoints";
-import { setToken, setBaseURL, getBaseURL, isTPVReady } from "../state/auth";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { saveAuth } from "../lib/auth";
+import axios from "axios";
+import {
+  setToken,
+} from "../state/auth";
+import PinModal from "../components/PinModal";
+
 import "../styles/login.css";
 
-export default function Login() {
-  const nav = useNavigate();
+const API_URL = "http://localhost:8080";
 
-  const [username, setU] = useState("admin");
-  const [password, setP] = useState("1234");
-  const [baseURL, setB] = useState<string>(""); // empezamos vacío
-  const [err, setErr] = useState<string | undefined>();
+export default function Login() {
+  const navigate = useNavigate();
+
+  const [email, setU] = useState("");
+  const [password, setP] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
+  const [err, setErr] = useState("");
 
-  // Cargar baseURL solo una vez cuando tpv esté listo
+  const [showPin, setShowPin] = useState(false);
+
+  // =====================================
+  // BOOTSTRAP
+  // =====================================
+
   useEffect(() => {
-    const init = () => {
-      if (isTPVReady()) {
-        const url = getBaseURL();
-        setB(url);
-        setReady(true);
-      } else {
-        setTimeout(init, 50);
-      }
-    };
-    init();
-  }, []);
+    const token = localStorage.getItem("tpv_token");
 
-  const onSubmit = async (e: React.FormEvent) => {
+    // Ya hay sesión
+    if (token) {
+      navigate("/app/mesas");
+      return;
+    }
+
+    setReady(true);
+  }, [navigate]);
+
+  // =====================================
+  // LOGIN
+  // =====================================
+
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!ready) return;
 
+    if (loading) return;
+
+    setErr("");
     setLoading(true);
-    setErr(undefined);
 
     try {
-      // Solo guardamos si cambió
-      if (baseURL !== getBaseURL()) {
-        setBaseURL(baseURL);
-      }
+      const res = await axios.post(
+        `${API_URL}/auth/login`,
+        {
+          email,
+          password,
+        },
+      );
 
-      const data = await login(username, password);
+      const token = res.data.token;
+      const user = res.data.user;
 
-      console.log("✅ Login exitoso");
-      saveAuth(data);
+      // =====================================
+      // GUARDAR SESIÓN
+      // =====================================
 
-      // Login principal, me lleva a x sitio segun sea necesario tras el login
-      console.log("🔄 Navegando a /");
-      if (data.features.includes("dashboard")) {
-        nav("/app/dashboard", { replace: true });
-      } else if (data.features.includes("kitchen")) {
-        nav("/app/cocina", { replace: true });
-      } else {
-        nav("/app/mesas", { replace: true });
-      }
-    } catch (error: any) {
-      console.error(error);
+      setToken(token);
+      window.tpv.set("user", user);
+
+      // PIN EMPLEADO
+      setShowPin(true);
+    } catch (e: any) {
+      console.error(e);
+
       setErr(
-        error?.response?.data?.error || error?.message || "Error desconocido",
+        e?.response?.data?.error ||
+        "No se pudo iniciar sesión",
       );
     } finally {
       setLoading(false);
     }
-  };
+  }
+
+  async function onPinSubmit(pin: string) {
+    try {
+      const token = localStorage.getItem("tpv_token");
+
+      const res = await axios.post(
+        `${API_URL}/empleados/pin-login`,
+        {
+          pin,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      const empleado = res.data.empleado;
+
+      window.tpv.set(
+        "empleado",
+        empleado,
+      );
+
+      navigate("/app/mesas");
+    } catch (e: any) {
+      throw new Error(
+        e?.response?.data?.error ||
+        "PIN incorrecto",
+      );
+    }
+  }
 
   return (
     <div className="login-page">
@@ -77,60 +126,74 @@ export default function Login() {
 
         <div className="login-title">TPV</div>
 
-        <div className="login-subtitle">Acceso al sistema</div>
-
-        {/* SERVER */}
-
-        <div className="login-group">
-          <label className="login-label">Servidor</label>
-
-          <input
-            className="login-input"
-            value={baseURL}
-            onChange={(e) => setB(e.target.value)}
-            disabled={!ready}
-          />
+        <div className="login-subtitle">
+          Acceso al sistema
         </div>
 
         {/* USER */}
 
         <div className="login-group">
-          <label className="login-label">Usuario</label>
+          <label className="login-label">
+            Usuario
+          </label>
 
           <input
             className="login-input"
-            value={username}
+            value={email}
             onChange={(e) => setU(e.target.value)}
+            autoComplete="email"
+            placeholder="Usuario"
           />
         </div>
 
         {/* PASSWORD */}
 
         <div className="login-group">
-          <label className="login-label">Contraseña</label>
+          <label className="login-label">
+            Contraseña
+          </label>
 
           <input
             type="password"
             className="login-input"
             value={password}
             onChange={(e) => setP(e.target.value)}
+            autoComplete="current-password"
+            placeholder="Contraseña"
           />
         </div>
 
         {/* ERROR */}
 
-        {err && <div className="login-error">{err}</div>}
+        {err && (
+          <div className="login-error">{err}</div>
+        )}
 
         {/* BUTTON */}
 
         <button
           type="submit"
-          disabled={loading || !ready}
+          disabled={
+            loading ||
+            !ready ||
+            !email.trim() ||
+            !password.trim()
+          }
           className="login-button"
         >
-          {loading ? "Conectando..." : !ready ? "Cargando..." : "Entrar"}
+          {loading
+            ? "Conectando..."
+            : !ready
+              ? "Cargando..."
+              : "Entrar"}
         </button>
       </form>
+      {showPin && (
+        <PinModal
+          title="Acceso empleado"
+          onSubmit={onPinSubmit}
+        />
+      )}
     </div>
   );
 }
