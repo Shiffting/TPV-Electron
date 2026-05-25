@@ -49,6 +49,7 @@ r.post("/", async (req, res) => {
   try {
     const result = await crearTicket({
       mesaId: req.body.mesaId || null,
+      empleadoId: req.body.empleadoId
     });
 
     res.json(result);

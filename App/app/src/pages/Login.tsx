@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import {
-  setToken,
-} from "../state/auth";
 import PinModal from "../components/PinModal";
+import { saveAuth } from "../lib/auth";
 
 import "../styles/login.css";
 
@@ -59,15 +57,7 @@ export default function Login() {
         },
       );
 
-      const token = res.data.token;
-      const user = res.data.user;
-
-      // =====================================
-      // GUARDAR SESIÓN
-      // =====================================
-
-      setToken(token);
-      window.tpv.set("user", user);
+      saveAuth(res.data);
 
       // PIN EMPLEADO
       setShowPin(true);
@@ -101,9 +91,17 @@ export default function Login() {
 
       const empleado = res.data.empleado;
 
-      window.tpv.set(
+      localStorage.setItem(
         "empleado",
-        empleado,
+        JSON.stringify(
+          empleado,
+        ),
+      );
+
+      window.dispatchEvent(
+        new Event(
+          "empleado-changed"
+        )
       );
 
       navigate("/app/mesas");

@@ -25,11 +25,13 @@ export async function login(
 
 export async function crearTicket(
   mesaId?: number,
+  empleadoId?: number
 ) {
   const { data } = await api.post(
     "/tickets",
     {
       mesaId,
+      empleadoId
     },
   );
 
@@ -161,17 +163,6 @@ export async function procesarCobro(
   });
 }
 
-//CERRAR TICKET
-export async function cerrarTicket(
-  ticketId: number,
-  version: number,
-) {
-  return editarTicket(ticketId, {
-    accion: "cerrar_ticket",
-    version,
-  });
-}
-
 //MESAS
 export async function getMesas() {
   const { data } = await api.get(
@@ -236,23 +227,41 @@ export async function getEstacion(
 }
 
 export async function cambiarEstadoEstacion(
-  lineaId: number,
+  ticketId: number,
+  lineasIds: number[],
   estado: string,
 ) {
 
-  const { data } = await api.patch(
-    `/lineas/${lineaId}/estado`,
+  return editarTicket(
+    ticketId,
     {
-      estado,
+      accion:
+        "cambiar_estado_lineas",
+
+      payload: {
+        lineasIds,
+        estado,
+      },
     },
   );
-
-  return data;
 }
 
 //Dashboard
-export async function getKpis() {
-  const res = await api.get("/reportes/dashboard");
+export async function getKpis(
+  range = "today",
+  negocioId = "",
+) {
+
+  const res =
+    await api.get(
+      "/reportes/dashboard",
+      {
+        params: {
+          range,
+          negocioId,
+        },
+      },
+    );
 
   return res.data;
 }

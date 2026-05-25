@@ -3,6 +3,8 @@ import { Router } from "express";
 import { crearEstacion } from "../../domain/estaciones/crearEstacion.js";
 import { editarEstacion } from "../../domain/estaciones/editarEstacion.js";
 import { eliminarEstacion } from "../../domain/estaciones/eliminarEstacion.js";
+import { obtenerEstaciones } from "../../projections/estaciones/obtenerEstaciones.js";
+import { obtenerEstacion } from "../../projections/estaciones/obtenerEstacion.js";
 
 const r = Router();
 

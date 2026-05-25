@@ -30,15 +30,15 @@ export async function editarTicket({
             ticketId,
         });
 
-        // VALIDAMOS CONCURRENCIA
-        validarVersionTicket({
-            versionActual: ticket.version,
-            versionEsperada,
-        });
+        const empleadoId = payload.empleadoId
 
         // ACCIONES
         switch (accion) {
             case "agregar_linea": {
+                validarVersionTicket({
+                    versionActual: ticket.version,
+                    versionEsperada,
+                });
                 // DATOS
                 const {
                     productoId,
@@ -181,17 +181,22 @@ export async function editarTicket({
                     ticketId,
                     tipoAccion: "LINEA_AGREGADA",
                     usuarioId,
-                    version: nuevaVersion,
+                    aggregateVersion: nuevaVersion,
                     payload: {
                         nuevaLineaId,
                         productoId,
                         cantidad,
+                        empleadoId
                     },
                 });
                 break;
             }
 
             case "editar_linea": {
+                validarVersionTicket({
+                    versionActual: ticket.version,
+                    versionEsperada,
+                });
 
                 // DATOS
                 const {
@@ -289,16 +294,21 @@ export async function editarTicket({
                     ticketId,
                     tipoAccion: "LINEA_EDITADA",
                     usuarioId,
-                    version: nuevaVersion,
+                    aggregateVersion: nuevaVersion,
                     payload: {
                         lineaOriginalId: lineaOriginal.id,
                         nuevaLineaId,
+                        empleadoId
                     },
                 });
                 break;
             }
 
             case "eliminar_linea": {
+                validarVersionTicket({
+                    versionActual: ticket.version,
+                    versionEsperada,
+                });
 
                 // DATOS
                 const { lineaId } = payload;
@@ -345,10 +355,11 @@ export async function editarTicket({
                     ticketId,
                     tipoAccion: "LINEA_CANCELADA",
                     usuarioId,
-                    version: nuevaVersion,
+                    aggregateVersion: nuevaVersion,
                     payload: {
                         lineaOriginalId: lineaOriginal.id,
                         nuevaLineaId,
+                        empleadoId
                     },
                 });
 
@@ -356,6 +367,10 @@ export async function editarTicket({
             }
 
             case "enviar_cocina": {
+                validarVersionTicket({
+                    versionActual: ticket.version,
+                    versionEsperada,
+                });
 
                 // LÍNEAS PENDIENTES
                 const [lineas] = await conn.query(
@@ -374,7 +389,9 @@ export async function editarTicket({
                     await conn.execute(
                         `
                         UPDATE ticket_lineas
-                        SET estatus_operacional = 'enviado'
+                        SET
+                            estatus_operacional = 'enviado',
+                            estatus_operacional_updated_at = NOW()
                         WHERE id = ?
                         `,
                         [linea.id],
@@ -394,15 +411,20 @@ export async function editarTicket({
                     ticketId,
                     tipoAccion: "TICKET_ENVIADO_COCINA",
                     usuarioId,
-                    version: nuevaVersion,
+                    aggregateVersion: nuevaVersion,
                     payload: {
                         lineas: lineas.map((l) => l.id),
+                        empleadoId
                     },
                 });
                 break;
             }
 
             case "agregar_pago": {
+                validarVersionTicket({
+                    versionActual: ticket.version,
+                    versionEsperada,
+                });
 
                 // =====================================
                 // DATOS
@@ -555,10 +577,11 @@ export async function editarTicket({
                     ticketId,
                     tipoAccion: "PAGO_AGREGADO",
                     usuarioId,
-                    version: nuevaVersion,
+                    aggregateVersion: nuevaVersion,
                     payload: {
                         metodoPagoId,
                         importe,
+                        empleadoId
                     },
                 });
 
@@ -566,6 +589,10 @@ export async function editarTicket({
             }
 
             case "cerrar_ticket": {
+                validarVersionTicket({
+                    versionActual: ticket.version,
+                    versionEsperada,
+                });
 
                 // RECARGAR TICKET
                 const ticketActual =
@@ -583,15 +610,6 @@ export async function editarTicket({
                 // MARCAR CERRADO
                 // =====================================
 
-                await conn.execute(
-                    `
-                    UPDATE tickets
-                    SET cerrado_en = NOW()
-                    WHERE id = ?
-                    `,
-                    [ticketId],
-                );
-
                 // NUEVA VERSIÓN
                 const nuevaVersion =
                     await incrementarVersionTicket({
@@ -599,15 +617,119 @@ export async function editarTicket({
                         ticketId,
                     });
 
+                await conn.execute(
+                    `
+                    UPDATE tickets
+                    SET cerrado_en = NOW()
+                    WHERE id = ?
+                    AND cerrado_en IS NULL
+                    `,
+                    [ticketId],
+                );
+
                 // ACCIÓN
                 await adjuntarAccionDeTicket({
                     conn,
                     ticketId,
                     tipoAccion: "TICKET_CERRADO",
                     usuarioId,
-                    version: nuevaVersion,
-                    payload: {},
+                    aggregateVersion: nuevaVersion,
+                    payload: {
+                        empleadoId
+                    },
                 });
+                break;
+            }
+
+            case "actualizar_comensales": {
+
+                const {
+                    comensales,
+                } = payload;
+
+                if (
+                    !Number.isInteger(comensales) ||
+                    comensales < 1
+                ) {
+                    throw new Error(
+                        "COMENSALES_INVALIDOS",
+                    );
+                }
+
+                await conn.execute(
+                    `
+                    UPDATE tickets
+                    SET comensales = ?
+                    WHERE id = ?
+                    `,
+                    [
+                        comensales,
+                        ticketId,
+                    ],
+                );
+
+                const nuevaVersion =
+                    await incrementarVersionTicket({
+                        conn,
+                        ticketId,
+                    });
+
+                await adjuntarAccionDeTicket({
+                    conn,
+                    ticketId,
+                    tipoAccion:
+                        "COMENSALES_ACTUALIZADOS",
+                    usuarioId,
+                    aggregateVersion: nuevaVersion,
+                    payload: {
+                        comensales,
+                        empleadoId
+                    },
+                });
+
+                break;
+            }
+
+            case "cambiar_estado_lineas": {
+
+                const {
+                    lineasIds,
+                    estado,
+                } = payload;
+
+                await conn.query(
+                    `
+                    UPDATE ticket_lineas
+                    SET
+                        estatus_operacional = ?,
+                        estatus_operacional_updated_at = NOW()
+                    WHERE id IN (?)
+                    `,
+                    [
+                        estado,
+                        lineasIds,
+                    ],
+                );
+
+                await adjuntarAccionDeTicket({
+                    conn,
+                    ticketId,
+
+                    tipoAccion:
+                        "LINEAS_ESTADO_CAMBIADO",
+
+                    usuarioId,
+
+                    version:
+                        ticket.version,
+
+                    payload: {
+                        lineasIds,
+                        estado,
+                        empleadoId
+                    },
+                });
+
                 break;
             }
 

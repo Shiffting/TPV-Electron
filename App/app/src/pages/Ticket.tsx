@@ -7,7 +7,6 @@ import {
   addLinea,
   eliminarLinea,
   enviarCocina,
-  cerrarTicket,
   editarTicket,
   agregarPago
 } from "../api/endpoints";
@@ -30,6 +29,7 @@ type LineaTicket = {
   subTotal: number;
   propiedades?: any[];
   lineasIds?: number[];
+  estadoFinanciero: string;
 };
 
 export default function Ticket() {
@@ -139,6 +139,59 @@ export default function Ticket() {
       [productos, categoriaActiva],
     );
 
+  //Liberar mesa
+  async function liberarMesa() {
+    try {
+      await editarTicket(
+        ticketId,
+        {
+          accion: "cerrar_ticket",
+          payload: {},
+          version,
+        }
+      );
+      nav("/app/mesas");
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.error ||
+        "No se pudo liberar la mesa",
+      );
+    }
+  }
+
+  //Cambiar numero de comensales/clientes
+  async function actualizarComensales(
+    nuevoValor: number,
+  ) {
+    if (nuevoValor < 1) { return }
+    try {
+      await editarTicket(
+        ticketId,
+        {
+          accion:
+            "actualizar_comensales",
+
+          payload: {
+            comensales: nuevoValor,
+            version
+          },
+        }
+      );
+
+      setTicket((prev: any) => ({
+        ...prev,
+        comensales: nuevoValor,
+      }));
+
+    } catch (err: any) {
+
+      setError(
+        err?.response?.data?.error ||
+        "No se pudieron actualizar los comensales",
+      );
+    }
+  }
+
   // =========================================
   // AGREGAR PRODUCTO
   // =========================================
@@ -200,7 +253,7 @@ export default function Ticket() {
                 : 2,
 
             importe: pago.importe,
-            lineas:  pago.lineas,
+            lineas: pago.lineas,
           },
           versionActual,
         );
@@ -368,11 +421,7 @@ export default function Ticket() {
 
   async function cerrar() {
     try {
-      await cerrarTicket(
-        ticketId,
-        version,
-      );
-
+      await liberarMesa();
       nav("/app/mesas");
     } catch (err: any) {
       setError("No se pudo cerrar ticket");
@@ -541,6 +590,42 @@ export default function Ticket() {
                 </div>
               </div>
 
+              <div className="tpv-comensales-control">
+
+                <button
+                  className="tpv-comensales-btn"
+                  onClick={() =>
+                    actualizarComensales(
+                      (ticket?.comensales || 1) - 1
+                    )
+                  }
+                >
+                  −
+                </button>
+
+                <div className="tpv-comensales-display">
+                  <span className="tpv-comensales-icon">
+                    👥
+                  </span>
+
+                  <span className="tpv-comensales-value">
+                    {ticket?.comensales || 1}
+                  </span>
+                </div>
+
+                <button
+                  className="tpv-comensales-btn"
+                  onClick={() =>
+                    actualizarComensales(
+                      (ticket?.comensales || 1) + 1
+                    )
+                  }
+                >
+                  +
+                </button>
+
+              </div>
+
               <div className="tpv-ticket-status">
                 {ticket?.estadoFinanciero ||
                   "pendiente"}
@@ -574,7 +659,16 @@ export default function Ticket() {
                       }
                     >
                       <div
-                        className="tpv-ticket-line"
+                        className={
+                          `tpv-ticket-line 
+                          ${l.estadoFinanciero === "pagado"
+                            ? "pagada"
+                            : l.estadoFinanciero === "parcial"
+                              ? "parcial"
+                              : ""
+                          }
+                          `
+                        }
                       >
 
                         <div className="tpv-ticket-line-left">
@@ -665,26 +759,19 @@ export default function Ticket() {
                       ? "tpv-back-button pagado"
                       : "tpv-back-button cobrar"
                   }
-                  disabled={
-                    ticket?.estadoFinanciero ===
-                    "pagado"
-                  }
-                  onClick={() => {
 
-                    if (
-                      ticket?.estadoFinanciero ===
-                      "pagado"
-                    ) {
+                  onClick={() => {
+                    if (ticket?.estadoFinanciero === "pagado") {
+                      liberarMesa();
                       return;
                     }
-
                     setShowPaymentModal(true);
                   }}
                 >
                   {
                     ticket?.estadoFinanciero ===
                       "pagado"
-                      ? "Pagado"
+                      ? "Liberar mesa"
                       : "Cobrar"
                   }
                 </button>

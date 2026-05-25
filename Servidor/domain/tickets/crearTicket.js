@@ -6,6 +6,7 @@ import {
 
 export async function crearTicket({
     mesaId,
+    empleadoId
 }) {
 
     const conn =
@@ -57,11 +58,12 @@ export async function crearTicket({
                 (
                   mesa_id,
                   estatus_financiero,
-                  version
+                  version,
+                  empleado_id
                 )
-                VALUES (?, 'pendiente', 1)
+                VALUES (?, 'pendiente', 1, ?)
                 `,
-                [mesaId],
+                [mesaId, empleadoId],
             );
 
         const ticketId =
@@ -78,6 +80,7 @@ export async function crearTicket({
                 "TICKET_CREADO",
             payload: {
                 mesaId,
+                empleadoId
             },
 
             aggregateVersion: 1,

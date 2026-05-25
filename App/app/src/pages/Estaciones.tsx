@@ -1,314 +1,976 @@
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+  useCallback
+} from "react";
 
 import {
+  getEstaciones,
   cambiarEstadoEstacion,
-  getEstacion,
 } from "../api/endpoints";
+
+import { useSwipeable } from "react-swipeable";
 
 import { socket } from "../lib/socket";
 
 import "../styles/estaciones.css";
-import "../styles/index.css";
 
-/* =========================================================
-   TIPOS
-========================================================= */
+function siguienteEstado(
+  estado: string,
+) {
 
-interface LineaEstacion {
-  id: number;
-  ticketId: number;
-  nombreProducto: string;
-  cantidad: number;
-  estadoOperativo: string;
-  mesaId: number;
-  estacionId: number;
-  estacionNombre: string;
-  estacionColor: string;
-  propiedades: string[];
+  switch (estado) {
+
+    case "enviado":
+      return "preparando";
+
+    case "preparando":
+      return "listo";
+
+    case "listo":
+      return "servido";
+
+    default:
+      return estado;
+  }
 }
 
-/* =========================================================
-   COMPONENTE
-========================================================= */
+function estadoAnterior(
+  estado: string,
+) {
 
-export default function Estacion() {
+  switch (estado) {
 
-  const [estaciones, setEstaciones] =
-    useState<any[]>([]);
+    case "preparando":
+      return "enviado";
 
-  /* =====================================================
-      LOAD
-  ===================================================== */
+    case "listo":
+      return "preparando";
 
-  async function load() {
+    case "servido":
+      return "listo";
 
-    try {
-      const res =
-        await getEstacion();
+    default:
+      return estado;
+  }
+}
 
-      setEstaciones(res);
-    } catch (e) {
-      console.error(e);
+function agruparLineas(
+  lineas: any[],
+) {
+
+  const grupos: Record<
+    string,
+    any
+  > = {};
+
+  for (const linea of lineas) {
+
+    const key =
+      `${linea.ticketId}-${linea.estadoOperativo}`;
+
+    if (!grupos[key]) {
+
+      grupos[key] = {
+
+        ticketId:
+          linea.ticketId,
+
+        mesaId:
+          linea.mesaId,
+
+        estado:
+          linea.estadoOperativo,
+
+        actualizadoEn:
+          linea.actualizadoEn,
+
+        lineas: [],
+      };
     }
+
+    grupos[key]
+      .lineas
+      .push(linea);
   }
 
-  useEffect(() => {
-    load();
-    socket.on(
-      "estacion:update",
-      load,
+  return Object.values(
+    grupos,
+  );
+}
+
+function formatElapsed(
+  date?: string,
+) {
+
+  if (!date) {
+    return "--:--";
+  }
+
+  const clean =
+    date
+      .replace("T", " ")
+      .replace(".000Z", "")
+      .replace("Z", "");
+
+  const [
+    ymd,
+    hms,
+  ] = clean.split(" ");
+
+  const [
+    year,
+    month,
+    day,
+  ] = ymd.split("-").map(Number);
+
+  const [
+    hour,
+    minute,
+    second,
+  ] = hms.split(":").map(Number);
+
+  const utcMs =
+    Date.UTC(
+      year,
+      month - 1,
+      day,
+      hour,
+      minute,
+      second,
     );
-    return () => {
-      socket.off(
-        "estacion:update",
-        load,
-      );
-    };
-  }, []);
 
-  /* =====================================================
-      CAMBIAR ESTADO
-  ===================================================== */
+  const diff =
+    Math.floor(
+      (
+        Date.now() -
+        utcMs
+      ) / 1000,
+    ) - (2 * 3600);
 
-  async function avanzarEstado(
-    linea: LineaEstacion,
-  ) {
+  const safeDiff =
+    Math.max(diff, 0);
 
-    try {
+  const hours =
+    Math.floor(
+      safeDiff / 3600,
+    );
 
-      let nuevoEstado = "pendiente";
+  const mins =
+    Math.floor(
+      (safeDiff % 3600) / 60,
+    );
 
-      if (
-        linea.estadoOperativo === "pendiente"
-      ) {
-        nuevoEstado = "preparando";
+  const secs =
+    safeDiff % 60;
 
-      } else if (
-        linea.estadoOperativo === "preparando"
-      ) {
-        nuevoEstado = "listo";
-
-      } else {
-        nuevoEstado = "pendiente";
-      }
-
-      await cambiarEstadoEstacion(
-        linea.id,
-        nuevoEstado,
-      );
-
-      await load();
-    } catch (e) {
-      console.error(e);
-    }
+  if (hours > 0) {
+    return `${hours}h ${mins}m ${secs}s`;
   }
 
-  /* =====================================================
-      RENDER
-  ===================================================== */
+  if (mins > 0) {
+    return `${mins}m ${secs}s`;
+  }
+
+  return `${secs}s`;
+}
+
+function ProductoItem({
+  p,
+  locked,
+  setLocked,
+  avanzarLinea,
+  retrocederLinea,
+}: any) {
+
+  const itemHandlers =
+    useSwipeable({
+
+      onSwipedLeft:
+        async () => {
+
+          if (locked) {
+            return;
+          }
+
+          try {
+
+            setLocked(true);
+
+            await retrocederLinea(
+              p.lineas,
+            );
+
+          } finally {
+
+            setLocked(false);
+          }
+        },
+
+      onSwipedRight:
+        async () => {
+
+          if (locked) {
+            return;
+          }
+
+          try {
+
+            setLocked(true);
+
+            await avanzarLinea(
+              p.lineas,
+            );
+
+          } finally {
+
+            setLocked(false);
+          }
+        },
+
+      preventScrollOnSwipe:
+        true,
+
+      trackMouse: false,
+    });
 
   return (
-    <div className="estaciones-page">
 
-      {/* =================================================
-          HEADER
-      ================================================== */}
+    <button
+      {...itemHandlers}
+      className="
+        estacion-group-item
+      "
+    >
 
-      <div className="estaciones-header">
+      <div className="
+        estacion-group-item-qty
+      ">
+        x{p.cantidad}
+      </div>
 
-        <div>
+      <div className="
+        estacion-group-item-content
+      ">
 
-          <div className="estaciones-title">
-            Estaciones
+        <div className="
+          estacion-group-item-name
+        ">
+          {p.nombre}
+        </div>
+
+        {p.lineas.some(
+          (l: any) =>
+            l.propiedades?.length,
+        ) && (
+
+            <div className="
+            estacion-group-item-props
+          ">
+
+              {([
+                ...new Set(
+                  p.lineas.flatMap(
+                    (l: any) =>
+                      l.propiedades || [],
+                  ),
+                ),
+              ] as string[]).map((prop) => (
+
+                <div
+                  key={String(prop)}
+                  className="
+                  estacion-group-item-prop
+                "
+                >
+                  • {prop}
+                </div>
+              ))}
+
+            </div>
+          )}
+
+      </div>
+
+    </button>
+  );
+}
+
+function GrupoCard({
+  grupo,
+  productos,
+  avanzarGrupo,
+  retrocederGrupo,
+  avanzarLinea,
+  retrocederLinea,
+  formatElapsed,
+}: any) {
+
+  const [
+    swiping,
+    setSwiping,
+  ] = useState<
+    "left" |
+    "right" |
+    null
+  >(null);
+
+  const [
+    locked,
+    setLocked,
+  ] = useState(false);
+
+  const handlers =
+    useSwipeable({
+
+      onSwiping: (e) => {
+
+        if (
+          e.dir === "Right"
+        ) {
+          setSwiping(
+            "right",
+          );
+        }
+
+        if (
+          e.dir === "Left"
+        ) {
+          setSwiping(
+            "left",
+          );
+        }
+      },
+
+      onSwipedRight: async () => {
+
+        if (locked) {
+          return;
+        }
+
+        try {
+
+          setLocked(true);
+
+          await avanzarGrupo(
+            grupo,
+          );
+
+        } finally {
+
+          setLocked(false);
+        }
+      },
+
+      onSwipedLeft: async () => {
+
+        if (locked) {
+          return;
+        }
+
+        try {
+
+          setLocked(true);
+
+          await retrocederGrupo(
+            grupo,
+          );
+
+        } finally {
+
+          setLocked(false);
+        }
+      },
+
+      onSwiped: () =>
+        setSwiping(
+          null,
+        ),
+
+      preventScrollOnSwipe:
+        true,
+
+      trackMouse: false,
+    });
+
+  return (
+
+    <div
+      {...handlers}
+      className={`
+  estacion-group-card
+  ${swiping === "right"
+          ? "swipe-next"
+          : ""
+        }
+  ${swiping === "left"
+          ? "swipe-back"
+          : ""
+        }
+`}
+    >
+
+      {/* HEADER */}
+
+      <button
+        className="estacion-group-header"
+      >
+
+        <div className="estacion-group-title">
+          Mesa {grupo.mesaId}
+        </div>
+
+        <div className="estacion-group-meta">
+
+          <div className="estacion-group-time">
+            {formatElapsed(
+              grupo.actualizadoEn,
+            )}
           </div>
 
-          <div className="estaciones-subtitle">
-            Producción activa
+          <div className="estacion-group-count">
+            {grupo.lineas.length}
           </div>
 
         </div>
-      </div>
 
-      {/* =================================================
-          ESTACIONES
-      ================================================== */}
+      </button>
 
-      <div className="estaciones-grid">
+      {/* ITEMS */}
 
-        {estaciones.map(
-          (estacion: any) => (
+      <div className="estacion-group-items">
 
-            <div
-              key={estacion.id}
-              className="estacion-card"
-            >
-
-              {/* HEADER */}
-
-              <div className="estacion-header">
-
-                <div
-                  className="estacion-dot"
-                  style={{
-                    background:
-                      estacion.color,
-                  }}
-                />
-
-                <div className="estacion-title">
-                  {estacion.nombre}
-                </div>
-
-                <div className="estacion-count">
-                  {
-                    estacion.lineas
-                      .length
-                  }
-                </div>
-
-              </div>
-
-              {/* COLUMNAS */}
-
-              <div className="estacion-columns">
-
-                <EstadoColumn
-                  titulo="Pendiente"
-                  estado="pendiente"
-                  lineas={
-                    estacion.lineas.filter(
-                      (
-                        l: LineaEstacion,
-                      ) =>
-                        l.estadoOperativo ===
-                        "pendiente",
-                    )
-                  }
-                  onClick={
-                    avanzarEstado
-                  }
-                />
-
-                <EstadoColumn
-                  titulo="Preparando"
-                  estado="preparando"
-                  lineas={
-                    estacion.lineas.filter(
-                      (
-                        l: LineaEstacion,
-                      ) =>
-                        l.estadoOperativo ===
-                        "preparando",
-                    )
-                  }
-                  onClick={
-                    avanzarEstado
-                  }
-                />
-
-                <EstadoColumn
-                  titulo="Listo"
-                  estado="listo"
-                  lineas={
-                    estacion.lineas.filter(
-                      (
-                        l: LineaEstacion,
-                      ) =>
-                        l.estadoOperativo ===
-                        "listo",
-                    )
-                  }
-                  onClick={
-                    avanzarEstado
-                  }
-                />
-
-              </div>
-            </div>
-          ),
+        {Object.values(productos).map(
+          (p: any) => {
+            return (
+              <ProductoItem
+                key={p.nombre}
+                p={p}
+                locked={locked}
+                setLocked={setLocked}
+                avanzarLinea={avanzarLinea}
+                retrocederLinea={retrocederLinea}
+              />
+            );
+          },
         )}
       </div>
     </div>
   );
 }
 
-/* =========================================================
-   COLUMNA
-========================================================= */
+export default function Estaciones() {
 
-function EstadoColumn({
-  titulo,
-  estado,
-  lineas,
-  onClick,
-}: any) {
+  const [
+    estaciones,
+    setEstaciones,
+  ] = useState<any[]>(
+    [],
+  );
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+  const [
+    selectedEstacion,
+    setSelectedEstacion,
+  ] = useState<
+    number | null
+  >(null);
+
+  const [
+    now,
+    setNow,
+  ] = useState(
+    Date.now(),
+  );
+
+  const load =
+    useCallback(
+      async (
+        silent = false
+      ) => {
+
+        try {
+
+          if (!silent) {
+            setLoading(true);
+          }
+
+          const data =
+            await getEstaciones();
+
+          setEstaciones(data);
+
+          if (
+            data.length > 0 &&
+            !selectedEstacion
+          ) {
+
+            setSelectedEstacion(
+              data[0].id,
+            );
+          }
+
+        } catch (e) {
+
+          console.error(e);
+
+        } finally {
+
+          if (!silent) {
+            setLoading(false);
+          }
+        }
+
+      },
+      [selectedEstacion],
+    );
+
+  useEffect(() => {
+
+    load();
+
+  }, []);
+
+  useEffect(() => {
+
+    const interval =
+      setInterval(() => {
+
+        setNow(
+          Date.now(),
+        );
+
+      }, 1000);
+
+    return () =>
+      clearInterval(
+        interval,
+      );
+
+  }, []);
+
+  useEffect(() => {
+
+    socket.on(
+      "ticket:update",
+      () => load(true),
+    );
+
+    return () => {
+
+      socket.off(
+        "ticket:update",
+        load,
+      );
+    };
+
+  }, []);
+
+  function actualizarLineasLocalmente(
+    lineasIds: number[],
+    nuevoEstado: string,
+  ) {
+
+    setEstaciones(prev =>
+      prev.map(estacion => ({
+
+        ...estacion,
+
+        lineas:
+          estacion.lineas.map(
+            (l: any) => {
+
+              if (
+                lineasIds.includes(
+                  l.id,
+                )
+              ) {
+
+                return {
+
+                  ...l,
+
+                  estadoOperativo:
+                    nuevoEstado,
+
+                  actualizadoEn:
+                    new Date()
+                      .toISOString(),
+                };
+              }
+
+              return l;
+            },
+          ),
+      })),
+    );
+  }
+
+  async function avanzarLinea(
+    lineas: any[],
+  ) {
+
+    if (!lineas?.length) {
+      return;
+    }
+
+    const estadoActual =
+      lineas[0]
+        .estadoOperativo;
+
+    const nuevoEstado =
+      siguienteEstado(
+        estadoActual,
+      );
+
+    const prev =
+      structuredClone(
+        estaciones,
+      );
+
+    try {
+
+      actualizarLineasLocalmente(
+        lineas.map(
+          l => l.id,
+        ),
+        nuevoEstado,
+      );
+
+      await cambiarEstadoEstacion(
+        lineas[0]
+          .ticketId,
+
+        lineas.map(
+          l => l.id,
+        ),
+
+        nuevoEstado,
+      );
+
+    } catch (e) {
+
+      setEstaciones(prev);
+
+      console.error(e);
+    }
+  }
+
+  async function retrocederLinea(
+    lineas: any[],
+  ) {
+
+    if (
+      !lineas?.length
+    ) {
+      return;
+    }
+
+    const estadoActual =
+      lineas[0]
+        .estadoOperativo;
+
+    const nuevoEstado =
+      estadoAnterior(
+        estadoActual,
+      );
+
+    const prev =
+      structuredClone(
+        estaciones,
+      );
+
+    try {
+
+      actualizarLineasLocalmente(
+        lineas.map(
+          l => l.id,
+        ),
+        nuevoEstado,
+      );
+
+      await cambiarEstadoEstacion(
+        lineas[0]
+          .ticketId,
+
+        lineas.map(
+          l => l.id,
+        ),
+
+        nuevoEstado,
+      );
+
+    } catch (e) {
+
+      setEstaciones(prev);
+
+      console.error(e);
+    }
+  }
+
+  async function avanzarGrupo(
+    grupo: any,
+  ) {
+
+    const nuevoEstado =
+      siguienteEstado(
+        grupo.estado,
+      );
+
+    await cambiarEstadoEstacion(
+      grupo.lineas[0].ticketId,
+
+      grupo.lineas.map(
+        (l: any) => l.id,
+      ),
+
+      nuevoEstado,
+    );
+  }
+
+  async function retrocederGrupo(
+    grupo: any,
+  ) {
+
+    const nuevoEstado =
+      estadoAnterior(
+        grupo.estado,
+      );
+
+    await cambiarEstadoEstacion(
+      grupo.lineas[0].ticketId,
+
+      grupo.lineas.map(
+        (l: any) => l.id,
+      ),
+
+      nuevoEstado,
+    );
+  }
+
+  const estacion =
+    estaciones.find(
+      (e) =>
+        e.id ===
+        selectedEstacion,
+    );
+
+  if (loading) {
+
+    return (
+      <div>
+        Cargando...
+      </div>
+    );
+  }
 
   return (
-    <div className="estacion-column">
 
-      <div className="estacion-column-title">
-        {titulo}
+    <div className="
+      estacion-page
+    ">
+
+      <div className="
+        estacion-header
+      ">
+
+        <h1 className="
+          estacion-page-title
+        ">
+          Estaciones
+        </h1>
+
+        <div className="
+          estacion-page-subtitle
+        ">
+          Producción activa
+        </div>
+
       </div>
 
-      <div className="estacion-column-content">
+      {/* TABS */}
 
-        {lineas.map((l: any) => (
+      <div className="
+        estacion-tabs
+      ">
 
-          <button
-            key={l.id}
-            className={`
-              estacion-ticket
-              ${estado}
-            `}
-            onClick={() =>
-              onClick(l)
-            }
-          >
+        {estaciones.map(
+          (e) => (
 
-            {/* TOP */}
+            <button
+              key={e.id}
+              className={`
+                estacion-tab
+                ${selectedEstacion ===
+                  e.id
+                  ? "active"
+                  : ""
+                }
+              `}
+              onClick={() =>
+                setSelectedEstacion(
+                  e.id,
+                )
+              }
+            >
+              {e.nombre}
+            </button>
 
-            <div className="estacion-ticket-top">
+          ),
+        )}
 
-              <div className="estacion-ticket-mesa">
-                Mesa {l.mesaId}
-              </div>
+      </div>
 
-              <div className="estacion-ticket-cantidad">
-                x{l.cantidad}
-              </div>
+      {/* ESTACION */}
+
+      {estacion && (
+
+        <div className="
+          estacion-board
+        ">
+
+          <div className="
+            estacion-board-header
+          ">
+
+            <div className="
+              estacion-board-title
+            ">
+
+              <div
+                className="
+                  estacion-board-dot
+                "
+                style={{
+                  background:
+                    estacion.color,
+                }}
+              />
+
+              {estacion.nombre}
 
             </div>
 
-            {/* PRODUCTO */}
-
-            <div className="estacion-ticket-producto">
-              {l.nombreProducto}
+            <div className="
+              estacion-board-count
+            ">
+              {
+                estacion.lineas
+                  .length
+              }
             </div>
 
-            {/* PROPIEDADES */}
+          </div>
 
-            {l.propiedades.length >
-              0 && (
-                <div className="estacion-ticket-props">
+          <div className="
+            estacion-columns
+          ">
 
-                  {l.propiedades.map(
-                    (p: string) => (
+            {[
+              "enviado",
+              "preparando",
+              "listo",
+            ].map(
+              (estado) => {
 
-                      <div
-                        key={p}
-                        className="estacion-ticket-prop"
-                      >
-                        • {p}
-                      </div>
-                    ),
-                  )}
+                const lineas =
+                  estacion.lineas.filter(
+                    (
+                      l: any,
+                    ) =>
+                      l.estadoOperativo ===
+                      estado,
+                  );
 
-                </div>
-              )}
+                const grupos =
+                  agruparLineas(
+                    lineas,
+                  );
 
-          </button>
-        ))}
-      </div>
+                return (
+
+                  <div
+                    key={estado}
+                    className="
+                      estacion-column
+                    "
+                  >
+
+                    <div className="
+                      estacion-column-title
+                    ">
+                      {estado}
+                    </div>
+
+                    <div className="
+                      estacion-column-content
+                    ">
+
+                      {grupos.map((grupo) => {
+
+                        const productos =
+                          grupo.lineas.reduce(
+                            (acc: any, l: any) => {
+
+                              if (!acc[l.nombreProducto]) {
+
+                                acc[l.nombreProducto] = {
+
+                                  nombre:
+                                    l.nombreProducto,
+
+                                  cantidad: 0,
+
+                                  lineas: [],
+                                };
+                              }
+
+                              acc[l.nombreProducto]
+                                .cantidad += l.cantidad;
+
+                              acc[l.nombreProducto]
+                                .lineas.push(l);
+
+                              return acc;
+
+                            },
+                            {},
+                          );
+
+                        return (
+
+                          <GrupoCard
+                            key={`${grupo.ticketId}-${grupo.estado}`}
+                            grupo={grupo}
+                            productos={productos}
+                            avanzarGrupo={avanzarGrupo}
+                            retrocederGrupo={retrocederGrupo}
+                            avanzarLinea={avanzarLinea}
+                            retrocederLinea={retrocederLinea}
+                            formatElapsed={formatElapsed}
+                          />
+
+                        );
+                      })}
+
+                    </div>
+
+                  </div>
+
+                );
+              },
+            )}
+
+          </div>
+
+        </div>
+
+      )}
+
     </div>
   );
 }

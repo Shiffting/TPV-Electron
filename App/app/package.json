@@ -12,7 +12,8 @@
     "dev": "concurrently -k \"npm:dev:renderer\" \"npm:dev:electron\" \"wait-on http://localhost:5173 && cross-env ELECTRON_DISABLE_SECURITY_WARNINGS=1 electron .\"",
     "build": "npm run build:renderer && npm run build:electron",
     "dist": "npm run build && electron-builder",
-    "start": "electron ."
+    "start": "electron .",
+    "electron": "cross-env ELECTRON_DISABLE_SECURITY_WARNINGS=1 electron ."
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.16",
@@ -51,6 +52,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.6",
+    "react-swipeable": "^7.0.2",
     "recharts": "^3.8.1",
     "socket.io-client": "^4.8.3"
   }

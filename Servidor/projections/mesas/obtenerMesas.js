@@ -27,7 +27,15 @@ export async function obtenerMesas() {
                     AND tl.estatus_operacional != 'servido'
                     THEN 1
                 END
-            ) AS items_pendientes
+            ) AS items_pendientes,
+
+            COUNT(
+                CASE
+                    WHEN tl.lifecycle_status = 'activo'
+                    AND tl.estatus_operacional != 'servido'
+                    THEN 1
+                END
+            ) AS total_items
 
         FROM mesas m
 
@@ -65,7 +73,7 @@ export async function obtenerMesas() {
 
     return mesas.map((m) => {
 
-        const ocupada = !!m.ticket_id;
+        const ocupada = !!m.ticket_id && Number(m.total_items || 0) > 0;
 
         let estado = "libre";
 

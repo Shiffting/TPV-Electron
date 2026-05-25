@@ -7,13 +7,18 @@ export async function adjuntarAccionDeTicket({
   tipoAccion,
   payload,
   actorUserId = null,
+  empleadoId = null,
   deviceId = null,
   causedByActionUuid = null,
   commandUuid = null,
   aggregateVersion,
 }) {
-  const actionUuid = uuidv4();
-  const executor = conn || pool;
+
+  const actionUuid =
+    uuidv4();
+
+  const executor =
+    conn || pool;
 
   await executor.query(
     `
@@ -26,9 +31,10 @@ export async function adjuntarAccionDeTicket({
       payload,
       actor_user_id,
       device_id,
-      caused_by_action_uuid
+      caused_by_action_uuid,
+      empleado_id
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
     [
       actionUuid,
@@ -40,7 +46,16 @@ export async function adjuntarAccionDeTicket({
       actorUserId,
       deviceId,
       causedByActionUuid,
+      payload.empleadoId
     ],
+  );
+
+  io.emit(
+    "ticket:update",
+    {
+      ticketId,
+      tipoAccion,
+    }
   );
 
   return actionUuid;

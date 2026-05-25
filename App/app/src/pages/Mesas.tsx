@@ -6,6 +6,8 @@ import {
   crearTicket,
 } from "../api/endpoints";
 
+import { getEmpleado } from "../state/empleado";
+
 import { useNavigate } from "react-router-dom";
 
 import "../styles/mesas.css";
@@ -159,14 +161,14 @@ export default function Mesas() {
     cargarMesas();
 
     socket.on(
-      "mesas:update",
+      "ticket:update",
       cargarMesas,
     );
 
     return () => {
 
       socket.off(
-        "mesas:update",
+        "ticket:update",
         cargarMesas,
       );
 
@@ -224,8 +226,9 @@ export default function Mesas() {
       // CREAR NUEVO
       // =====================================
 
+      const empleado = getEmpleado();
       const { ticketId } =
-        await crearTicket(mesaId);
+        await crearTicket(mesaId, empleado.id);
 
       nav(
         `/app/ticket/${ticketId}`,

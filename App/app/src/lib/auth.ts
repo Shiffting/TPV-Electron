@@ -5,7 +5,7 @@ export function saveAuth(data: any) {
 
   localStorage.setItem(
     "user",
-    JSON.stringify(data.user),
+    JSON.stringify(data.usuario),
   );
 
   localStorage.setItem(
@@ -27,7 +27,7 @@ export function getFeatures(): string[] {
 }
 
 export function logout() {
-  localStorage.removeItem("token");
+  localStorage.removeItem("tpv_token");
   localStorage.removeItem("user");
   localStorage.removeItem("features");
 }
