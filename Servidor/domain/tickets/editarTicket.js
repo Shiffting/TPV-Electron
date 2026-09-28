@@ -588,6 +588,207 @@ export async function editarTicket({
                 break;
             }
 
+            case "traspasar_mesa": {
+                validarVersionTicket({
+                    versionActual: ticket.version,
+                    versionEsperada,
+                });
+
+                const {
+                    mesaDestinoId,
+                } = payload;
+
+                if (!Number.isInteger(Number(mesaDestinoId))) {
+                    throw new Error("MESA_DESTINO_INVALIDA");
+                }
+
+                const destinoId = Number(mesaDestinoId);
+
+                if (destinoId === Number(ticket.mesa_id)) {
+                    throw new Error("MESA_DESTINO_IGUAL");
+                }
+
+                if (ticket.estatus_financiero === "pagado") {
+                    throw new Error("TICKET_YA_PAGADO");
+                }
+
+                const [[mesaDestino]] = await conn.query(
+                    \`
+                    SELECT id, nombre
+                    FROM mesas
+                    WHERE id = ?
+                      AND activa = 1
+                    LIMIT 1
+                    \`,
+                    [destinoId],
+                );
+
+                if (!mesaDestino) {
+                    throw new Error("MESA_DESTINO_NO_ENCONTRADA");
+                }
+
+                const [[pagosOrigen]] = await conn.query(
+                    \`
+                    SELECT COUNT(*) AS total
+                    FROM pagos
+                    WHERE ticket_id = ?
+                    \`,
+                    [ticketId],
+                );
+
+                if (Number(pagosOrigen.total || 0) > 0) {
+                    throw new Error("TICKET_CON_PAGOS_NO_TRASPASABLE");
+                }
+
+                const [[ticketDestino]] = await conn.query(
+                    \`
+                    SELECT *
+                    FROM tickets
+                    WHERE mesa_id = ?
+                      AND cerrado_en IS NULL
+                      AND id != ?
+                    ORDER BY id DESC
+                    LIMIT 1
+                    \`,
+                    [destinoId, ticketId],
+                );
+
+                let ticketFinalId = ticketId;
+
+                if (ticketDestino) {
+                    if (ticketDestino.estatus_financiero === "pagado") {
+                        throw new Error("MESA_DESTINO_PAGADA");
+                    }
+
+                    const [[pagosDestino]] = await conn.query(
+                        \`
+                        SELECT COUNT(*) AS total
+                        FROM pagos
+                        WHERE ticket_id = ?
+                        \`,
+                        [ticketDestino.id],
+                    );
+
+                    if (Number(pagosDestino.total || 0) > 0) {
+                        throw new Error("MESA_DESTINO_CON_PAGOS");
+                    }
+
+                    await conn.execute(
+                        \`
+                        UPDATE ticket_lineas
+                        SET ticket_id = ?
+                        WHERE ticket_id = ?
+                          AND lifecycle_status = 'activo'
+                        \`,
+                        [ticketDestino.id, ticketId],
+                    );
+
+                    await conn.execute(
+                        \`
+                        UPDATE tickets
+                        SET comensales = COALESCE(comensales, 1) + COALESCE(?, 1)
+                        WHERE id = ?
+                        \`,
+                        [ticket.comensales, ticketDestino.id],
+                    );
+
+                    await recalcularTotalesTicket({
+                        conn,
+                        ticketId: ticketDestino.id,
+                    });
+
+                    await recalcularEstadoFinancieroTicket({
+                        conn,
+                        ticketId: ticketDestino.id,
+                    });
+
+                    const nuevaVersionDestino =
+                        await incrementarVersionTicket({
+                            conn,
+                            ticketId: ticketDestino.id,
+                        });
+
+                    const nuevaVersionOrigen =
+                        await incrementarVersionTicket({
+                            conn,
+                            ticketId,
+                        });
+
+                    await conn.execute(
+                        \`
+                        UPDATE tickets
+                        SET cerrado_en = NOW()
+                        WHERE id = ?
+                          AND cerrado_en IS NULL
+                        \`,
+                        [ticketId],
+                    );
+
+                    await adjuntarAccionDeTicket({
+                        conn,
+                        ticketId,
+                        tipoAccion: "TICKET_TRASPASADO",
+                        usuarioId,
+                        aggregateVersion: nuevaVersionOrigen,
+                        payload: {
+                            mesaOrigenId: ticket.mesa_id,
+                            mesaDestinoId: destinoId,
+                            ticketDestinoId: ticketDestino.id,
+                            tipo: "fusion",
+                            empleadoId,
+                        },
+                    });
+
+                    await adjuntarAccionDeTicket({
+                        conn,
+                        ticketId: ticketDestino.id,
+                        tipoAccion: "TICKET_TRASPASADO_RECIBIDO",
+                        usuarioId,
+                        aggregateVersion: nuevaVersionDestino,
+                        payload: {
+                            mesaOrigenId: ticket.mesa_id,
+                            mesaDestinoId: destinoId,
+                            ticketOrigenId: ticketId,
+                            tipo: "fusion",
+                            empleadoId,
+                        },
+                    });
+
+                    ticketFinalId = ticketDestino.id;
+                } else {
+                    await conn.execute(
+                        \`
+                        UPDATE tickets
+                        SET mesa_id = ?
+                        WHERE id = ?
+                        \`,
+                        [destinoId, ticketId],
+                    );
+
+                    const nuevaVersion =
+                        await incrementarVersionTicket({
+                            conn,
+                            ticketId,
+                        });
+
+                    await adjuntarAccionDeTicket({
+                        conn,
+                        ticketId,
+                        tipoAccion: "TICKET_TRASPASADO",
+                        usuarioId,
+                        aggregateVersion: nuevaVersion,
+                        payload: {
+                            mesaOrigenId: ticket.mesa_id,
+                            mesaDestinoId: destinoId,
+                            tipo: "movimiento",
+                            empleadoId,
+                        },
+                    });
+                }
+
+                break;
+            }
+
             case "cerrar_ticket": {
                 validarVersionTicket({
                     versionActual: ticket.version,
