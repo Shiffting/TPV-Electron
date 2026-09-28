@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 
 import { getToken } from "../state/auth";
-import { FEATURES } from "../lib/features";
+import { FEATURES, type FeatureKey } from "../lib/features";
 
 import {
   getFeatures,
@@ -26,6 +26,7 @@ import {
 
 import { useState } from "react";
 import PinModal from "../components/PinModal";
+import FeatureUnavailable from "../components/FeatureUnavailable";
 import axios from "axios";
 
 import "../styles/layout-shell.css";
@@ -493,7 +494,7 @@ export default function Shell() {
 
       {/* PIN */}
 
-      {showPinModal && (
+      {unavailableFeature && (\n        <FeatureUnavailable\n          feature={unavailableFeature}\n          onClose={() => setUnavailableFeature(null)}\n        />\n      )}\n\n      {showPinModal && (
 
         <PinModal
           title="
