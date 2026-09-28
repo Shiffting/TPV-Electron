@@ -119,6 +119,21 @@ export async function eliminarLinea(
   });
 }
 
+// TRASPASAR / FUSIONAR MESA
+export async function traspasarMesa(
+  ticketId: number,
+  mesaDestinoId: number,
+  version: number,
+) {
+  return editarTicket(ticketId, {
+    accion: "traspasar_mesa",
+    version,
+    payload: {
+      mesaDestinoId,
+    },
+  });
+}
+
 //ENVIAR COCINA
 export async function enviarCocina(
   ticketId: number,
