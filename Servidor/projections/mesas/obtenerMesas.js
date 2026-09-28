@@ -21,12 +21,20 @@ export async function obtenerMesas() {
                 NOW()
             ) AS minutos_ocupada,
 
-            COUNT(
-                CASE
-                    WHEN tl.lifecycle_status = 'activo'
-                    AND tl.estatus_operacional != 'servido'
-                    THEN 1
-                END
+            (
+                SELECT COUNT(*)
+                FROM ticket_lineas tlp
+                WHERE tlp.ticket_id = t.id
+                  AND tlp.lifecycle_status = 'activo'
+                  AND tlp.estatus_operacional != 'servido'
+                  AND COALESCE(
+                      (
+                          SELECT SUM(pa.importe)
+                          FROM payment_allocations pa
+                          WHERE pa.ticket_linea_id = tlp.id
+                      ),
+                      0
+                  ) < tlp.total_linea
             ) AS items_pendientes,
 
             COUNT(
