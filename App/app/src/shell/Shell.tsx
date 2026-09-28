@@ -97,6 +97,11 @@ export default function Shell() {
     setShowPinModal,
   ] = useState(false);
 
+  const [
+    unavailableFeature,
+    setUnavailableFeature,
+  ] = useState<FeatureKey | null>(null);
+
   if (!token) {
 
     return (
@@ -127,6 +132,9 @@ export default function Shell() {
       "encargado",
       "cocina",
     ].includes(rol);
+
+  const canManageFeatures =
+    ["admin", "encargado"].includes(rol);
 
   async function cambiarEmpleado(
     pin: string,
@@ -252,40 +260,30 @@ export default function Shell() {
           tpv-sidebar-nav
         ">
 
-          {canDashboard &&
-            features.includes(
-              FEATURES.DASHBOARD,
-            ) && (
-
+          {canDashboard && (
+            features.includes(FEATURES.DASHBOARD) ? (
               <NavLink
                 to="/app/dashboard"
-                className={(
-                  {
-                    isActive,
-                  },
-                ) =>
-                  `
-                tpv-sidebar-link
-                ${isActive
-                    ? "active"
-                    : ""
-                  }
-              `
+                className={({ isActive }) =>
+                  `tpv-sidebar-link ${isActive ? "active" : ""}`
                 }
               >
-
-                <BarChart3
-                  size={20}
-                />
-
-                {!sidebarCollapsed && (
-                  <span>
-                    KPI
-                  </span>
-                )}
-
+                <BarChart3 size={20} />
+                {!sidebarCollapsed && <span>KPI</span>}
               </NavLink>
-            )}
+            ) : canManageFeatures ? (
+              <button
+                type="button"
+                className="tpv-sidebar-link tpv-sidebar-link-locked"
+                onClick={() =>
+                  setUnavailableFeature(FEATURES.DASHBOARD)
+                }
+              >
+                <BarChart3 size={20} />
+                {!sidebarCollapsed && <span>KPI</span>}
+              </button>
+            ) : null
+          )}
 
           {canMesas &&
             features.includes(
@@ -324,7 +322,7 @@ export default function Shell() {
 
           {canMesas &&
             features.includes(
-              "waiter",
+              FEATURES.WAITER,
             ) && (
 
               <NavLink
@@ -357,40 +355,43 @@ export default function Shell() {
               </NavLink>
             )}
 
-          {canEstaciones &&
-            features.includes(
-              FEATURES.KITCHEN,
-            ) && (
-
+          {canEstaciones && (
+            features.includes(FEATURES.KITCHEN) ? (
               <NavLink
                 to="/app/estaciones"
-                className={(
-                  {
-                    isActive,
-                  },
-                ) =>
-                  `
-                tpv-sidebar-link
-                ${isActive
-                    ? "active"
-                    : ""
-                  }
-              `
+                className={({ isActive }) =>
+                  `tpv-sidebar-link ${isActive ? "active" : ""}`
                 }
               >
-
-                <ChefHat
-                  size={20}
-                />
-
-                {!sidebarCollapsed && (
-                  <span>
-                    Estaciones
-                  </span>
-                )}
-
+                <ChefHat size={20} />
+                {!sidebarCollapsed && <span>Estaciones</span>}
               </NavLink>
-            )}
+            ) : canManageFeatures ? (
+              <button
+                type="button"
+                className="tpv-sidebar-link tpv-sidebar-link-locked"
+                onClick={() =>
+                  setUnavailableFeature(FEATURES.KITCHEN)
+                }
+              >
+                <ChefHat size={20} />
+                {!sidebarCollapsed && <span>Estaciones</span>}
+              </button>
+            ) : null
+          )}
+
+          {canManageFeatures && (
+            <button
+              type="button"
+              className="tpv-sidebar-link tpv-sidebar-link-locked"
+              onClick={() =>
+                setUnavailableFeature(FEATURES.STOCK)
+              }
+            >
+              <span className="tpv-sidebar-feature-icon">+</span>
+              {!sidebarCollapsed && <span>Stock</span>}
+            </button>
+          )}
 
         </nav>
 
@@ -494,7 +495,14 @@ export default function Shell() {
 
       {/* PIN */}
 
-      {unavailableFeature && (\n        <FeatureUnavailable\n          feature={unavailableFeature}\n          onClose={() => setUnavailableFeature(null)}\n        />\n      )}\n\n      {showPinModal && (
+      {unavailableFeature && (
+        <FeatureUnavailable
+          feature={unavailableFeature}
+          onClose={() => setUnavailableFeature(null)}
+        />
+      )}
+
+      {showPinModal && (
 
         <PinModal
           title="
