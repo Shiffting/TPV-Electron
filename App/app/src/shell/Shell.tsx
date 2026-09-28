@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { getToken } from "../state/auth";
+import { FEATURES } from "../lib/features";
 
 import {
   getFeatures,
@@ -252,7 +253,7 @@ export default function Shell() {
 
           {canDashboard &&
             features.includes(
-              "dashboard",
+              FEATURES.DASHBOARD,
             ) && (
 
               <NavLink
@@ -287,7 +288,7 @@ export default function Shell() {
 
           {canMesas &&
             features.includes(
-              "waiter",
+              FEATURES.WAITER,
             ) && (
 
               <NavLink
@@ -357,7 +358,7 @@ export default function Shell() {
 
           {canEstaciones &&
             features.includes(
-              "kitchen",
+              FEATURES.KITCHEN,
             ) && (
 
               <NavLink
