@@ -13,7 +13,8 @@ import {
   ChefHat,
   LogOut,
   User,
-  BarChart3,\n  Package,
+  BarChart3,
+  Package,
 } from "lucide-react";
 
 import { getToken } from "../state/auth";
