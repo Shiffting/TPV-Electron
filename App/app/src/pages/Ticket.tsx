@@ -787,20 +787,22 @@ export default function Ticket() {
               {/* =====================================================
                 ACCIONES
             ===================================================== */}
-              < div className="tpv-ticket-actions" >
-                <button
-                  onClick={onEnviar}
-                  className="tpv-back-button"
-                >
-                  Enviar
-                </button>
+              <div className="tpv-ticket-actions">
+                <div className="tpv-ticket-actions-top">
+                  <button
+                    onClick={onEnviar}
+                    className="tpv-back-button"
+                  >
+                    Enviar
+                  </button>
 
-                <button
-                  onClick={onImprimir}
-                  className="tpv-back-button"
-                >
-                  Imprimir
-                </button>
+                  <button
+                    onClick={onImprimir}
+                    className="tpv-back-button"
+                  >
+                    Imprimir
+                  </button>
+                </div>
 
                 <button
                   className={
@@ -809,7 +811,6 @@ export default function Ticket() {
                       ? "tpv-back-button pagado"
                       : "tpv-back-button cobrar"
                   }
-
                   onClick={() => {
                     if (ticket?.estadoFinanciero === "pagado") {
                       liberarMesa();
