@@ -14,6 +14,7 @@ import Mesas from "./pages/Mesas";
 import Barra from "./pages/Barra";
 import Ticket from "./pages/Ticket";
 import Estaciones from "./pages/Estaciones";
+import Stock from "./pages/Stock";
 import Shell from "./shell/Shell";
 import FeatureGate from "./components/FeatureGate";
 import { FEATURES } from "./lib/features";
