@@ -742,12 +742,23 @@
 
 .tpv-ticket-actions {
     display: flex;
-
+    flex-direction: column;
     gap: 12px;
 }
 
-.tpv-ticket-actions>* {
-    flex: 1;
+.tpv-ticket-actions-top {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.tpv-ticket-actions-top .tpv-back-button,
+.tpv-ticket-actions > .tpv-back-button {
+    width: 100%;
+}
+
+.tpv-ticket-actions > .tpv-back-button {
+    flex: none;
 }
 
 .tpv-actions {
