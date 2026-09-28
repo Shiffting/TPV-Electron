@@ -4,11 +4,13 @@ import {
   getCategorias,
   getProductos,
   getPropiedadesProducto,
+  getMesas,
   addLinea,
   eliminarLinea,
   enviarCocina,
   editarTicket,
-  agregarPago
+  agregarPago,
+  traspasarMesa
 } from "../api/endpoints";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import SwipeableTicketLine from "../components/SwipeableTicketLine"
@@ -54,6 +56,9 @@ export default function Ticket() {
   const [propsSeleccionadas, setPropsSeleccionadas] = useState<any[]>([]);
   const [editandoLinea, setEditandoLinea] = useState<any>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showTraspasoModal, setShowTraspasoModal] = useState(false);
+  const [mesasTraspaso, setMesasTraspaso] = useState<any[]>([]);
+  const [traspasando, setTraspasando] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -140,6 +145,48 @@ export default function Ticket() {
     },
       [productos, categoriaActiva],
     );
+
+  async function abrirTraspaso() {
+    try {
+      const mesas = await getMesas();
+
+      setMesasTraspaso(
+        mesas.filter(
+          (m: any) => m.id !== ticket?.mesaId,
+        ),
+      );
+
+      setShowTraspasoModal(true);
+    } catch (err) {
+      setError("No se pudieron cargar las mesas");
+    }
+  }
+
+  async function ejecutarTraspaso(
+    mesaDestinoId: number,
+  ) {
+    if (traspasando) return;
+
+    try {
+      setTraspasando(true);
+
+      await traspasarMesa(
+        ticketId,
+        mesaDestinoId,
+        version,
+      );
+
+      setShowTraspasoModal(false);
+      nav("/app/mesas");
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.error ||
+        "No se pudo traspasar la mesa",
+      );
+    } finally {
+      setTraspasando(false);
+    }
+  }
 
   // Cerrar ticket y volver al contexto de origen
   async function liberarMesa() {
@@ -829,6 +876,15 @@ export default function Ticket() {
                   </button>
                 </div>
 
+                {!isBarra && (
+                  <button
+                    onClick={abrirTraspaso}
+                    className="tpv-back-button"
+                  >
+                    Traspasar mesa
+                  </button>
+                )}
+
                 <button
                   className={
                     ticket?.estadoFinanciero ===
@@ -881,6 +937,60 @@ export default function Ticket() {
           </aside>
         </div>
       </div >
+      {showTraspasoModal && (
+        <div className="tpv-modal-overlay">
+          <div className="tpv-modal">
+            <div className="tpv-modal-header">
+              <h2>Traspasar mesa</h2>
+            </div>
+
+            <div className="tpv-modal-body">
+              <p>
+                Selecciona la mesa a la que quieres mover esta venta.
+                Si ya tiene una venta abierta, ambas se unirán.
+              </p>
+
+              {mesasTraspaso.map((m: any) => {
+                const ocupada = !!m.ocupacion?.ocupada;
+
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => ejecutarTraspaso(m.id)}
+                    disabled={traspasando}
+                    className="tpv-prop-button"
+                  >
+                    <span>
+                      {m.nombre}
+                    </span>
+
+                    <span>
+                      {ocupada ? "Unir" : "Mover"}
+                    </span>
+                  </button>
+                );
+              })}
+
+              {!mesasTraspaso.length && (
+                <div className="tpv-ticket-empty">
+                  No hay otras mesas disponibles.
+                </div>
+              )}
+            </div>
+
+            <div className="tpv-modal-footer">
+              <button
+                onClick={() => setShowTraspasoModal(false)}
+                disabled={traspasando}
+                className="tpv-back-button"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {
         configurandoProducto && (
           <div className="tpv-modal-overlay">
