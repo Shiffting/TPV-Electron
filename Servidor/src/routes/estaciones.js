@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { requireFeature } from "../lib/requireFeature.js";
+import { FEATURES } from "../features/features.js";
 
 import { crearEstacion } from "../../domain/estaciones/crearEstacion.js";
 import { editarEstacion } from "../../domain/estaciones/editarEstacion.js";
@@ -7,6 +9,8 @@ import { obtenerEstaciones } from "../../projections/estaciones/obtenerEstacione
 import { obtenerEstacion } from "../../projections/estaciones/obtenerEstacion.js";
 
 const r = Router();
+
+r.use(requireFeature(FEATURES.KITCHEN));
 
 /* =========================================
    OBTENER ESTACIONES
