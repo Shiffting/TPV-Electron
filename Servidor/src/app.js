@@ -19,6 +19,7 @@ import mesasRouter from "./routes/mesas.js";
 import estacionesRouter from "./routes/estaciones.js";
 import usuariosRouter from "./routes/usuarios.js";
 import reportesRouter from "./routes/reportes.js";
+import stockRouter from "./routes/stock.js";
 import { authMiddleware } from "./lib/auth.js";
 import empleadosRoutes from "./routes/empleados.js";
 
@@ -182,6 +183,12 @@ app.use(
   "/reportes",
   authMiddleware,
   reportesRouter,
+);
+
+app.use(
+  "/stock",
+  authMiddleware,
+  stockRouter,
 );
 
 app.use(
