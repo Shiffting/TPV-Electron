@@ -10,7 +10,7 @@ import {
   editarTicket,
   agregarPago
 } from "../api/endpoints";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import SwipeableTicketLine from "../components/SwipeableTicketLine"
 import ModalPago, { type Pago } from "../components/ModalPago";
 
@@ -37,6 +37,8 @@ export default function Ticket() {
   const { id } = useParams();
   const ticketId = Number(id);
   const nav = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isBarra = searchParams.get("modo") === "barra";
 
   // =========================================
   // STATE
@@ -139,7 +141,7 @@ export default function Ticket() {
       [productos, categoriaActiva],
     );
 
-  //Liberar mesa
+  // Cerrar ticket y volver al contexto de origen
   async function liberarMesa() {
     try {
       await editarTicket(
@@ -150,7 +152,7 @@ export default function Ticket() {
           version,
         }
       );
-      nav("/app/mesas");
+      nav(isBarra ? "/app/barra" : "/app/mesas");
     } catch (err: any) {
       setError(
         err?.response?.data?.error ||
@@ -262,6 +264,27 @@ export default function Ticket() {
           await loadTicket();
 
         versionActual = ticketActualizado.ticket.version;
+
+        // En barra, una vez cobrado completamente, cerramos
+        // el ticket inmediatamente para que no quede una
+        // venta abierta accesible desde mesas.
+        if (
+          isBarra &&
+          ticketActualizado.ticket.estadoFinanciero === "pagado"
+        ) {
+          await editarTicket(
+            ticketId,
+            {
+              accion: "cerrar_ticket",
+              payload: {},
+              version: versionActual,
+            },
+          );
+
+          setShowPaymentModal(false);
+          nav("/app/barra");
+          return;
+        }
       }
 
       setShowPaymentModal(false);
@@ -542,16 +565,16 @@ export default function Ticket() {
       <header className="tpv-header">
         <div className="tpv-header-left">
           <div className="tpv-page-title">
-            Ticket #{ticket?.id}
+            {isBarra ? "Barra" : `Ticket #${ticket?.id}`}
           </div>
 
           <div className="tpv-ticket-badge">
-            {ticket?.mesaNombre || "-"}
+            {isBarra ? "Venta directa" : (ticket?.mesaNombre || "-")}
           </div>
         </div>
 
         <button
-          onClick={() => nav("/app/mesas")}
+          onClick={() => nav(isBarra ? "/app/mesas" : "/app/mesas")}
           className="tpv-back-button"
         >
           Volver
@@ -633,6 +656,7 @@ export default function Ticket() {
                 </div>
               </div>
 
+              {!isBarra && (
               <div className="tpv-comensales-control">
 
                 <button
@@ -668,6 +692,7 @@ export default function Ticket() {
                 </button>
 
               </div>
+              )}
 
               <div className="tpv-ticket-status">
                 {ticket?.estadoFinanciero ||
@@ -822,7 +847,7 @@ export default function Ticket() {
                   {
                     ticket?.estadoFinanciero ===
                       "pagado"
-                      ? "Liberar mesa"
+                      ? (isBarra ? "Cobrado" : "Liberar mesa")
                       : "Cobrar"
                   }
                 </button>
