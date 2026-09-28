@@ -613,13 +613,13 @@ export async function editarTicket({
                 }
 
                 const [[mesaDestino]] = await conn.query(
-                    \`
+                    `
                     SELECT id, nombre
                     FROM mesas
                     WHERE id = ?
                       AND activa = 1
                     LIMIT 1
-                    \`,
+                    `,
                     [destinoId],
                 );
 
@@ -628,11 +628,11 @@ export async function editarTicket({
                 }
 
                 const [[pagosOrigen]] = await conn.query(
-                    \`
+                    `
                     SELECT COUNT(*) AS total
                     FROM pagos
                     WHERE ticket_id = ?
-                    \`,
+                    `,
                     [ticketId],
                 );
 
@@ -641,7 +641,7 @@ export async function editarTicket({
                 }
 
                 const [[ticketDestino]] = await conn.query(
-                    \`
+                    `
                     SELECT *
                     FROM tickets
                     WHERE mesa_id = ?
@@ -649,7 +649,7 @@ export async function editarTicket({
                       AND id != ?
                     ORDER BY id DESC
                     LIMIT 1
-                    \`,
+                    `,
                     [destinoId, ticketId],
                 );
 
@@ -661,11 +661,11 @@ export async function editarTicket({
                     }
 
                     const [[pagosDestino]] = await conn.query(
-                        \`
+                        `
                         SELECT COUNT(*) AS total
                         FROM pagos
                         WHERE ticket_id = ?
-                        \`,
+                        `,
                         [ticketDestino.id],
                     );
 
@@ -674,21 +674,21 @@ export async function editarTicket({
                     }
 
                     await conn.execute(
-                        \`
+                        `
                         UPDATE ticket_lineas
                         SET ticket_id = ?
                         WHERE ticket_id = ?
                           AND lifecycle_status = 'activo'
-                        \`,
+                        `,
                         [ticketDestino.id, ticketId],
                     );
 
                     await conn.execute(
-                        \`
+                        `
                         UPDATE tickets
                         SET comensales = COALESCE(comensales, 1) + COALESCE(?, 1)
                         WHERE id = ?
-                        \`,
+                        `,
                         [ticket.comensales, ticketDestino.id],
                     );
 
@@ -715,12 +715,12 @@ export async function editarTicket({
                         });
 
                     await conn.execute(
-                        \`
+                        `
                         UPDATE tickets
                         SET cerrado_en = NOW()
                         WHERE id = ?
                           AND cerrado_en IS NULL
-                        \`,
+                        `,
                         [ticketId],
                     );
 
@@ -757,11 +757,11 @@ export async function editarTicket({
                     ticketFinalId = ticketDestino.id;
                 } else {
                     await conn.execute(
-                        \`
+                        `
                         UPDATE tickets
                         SET mesa_id = ?
                         WHERE id = ?
-                        \`,
+                        `,
                         [destinoId, ticketId],
                     );
 
