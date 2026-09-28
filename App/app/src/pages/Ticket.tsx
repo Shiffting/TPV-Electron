@@ -275,6 +275,21 @@ export default function Ticket() {
     }
   }
 
+  // IMPRIMIR TICKET SIN COBRAR
+  async function onImprimir() {
+    try {
+      await (window as any).tpv?.printTicket({
+        id: ticket?.id,
+        mesaNombre: ticket?.mesaNombre,
+        comensales: ticket?.comensales || 1,
+        total: Number(ticket?.total || 0),
+        lineas: ticket?.lineas || [],
+      });
+    } catch (err: any) {
+      setError(err?.message || "No se pudo imprimir el ticket");
+    }
+  }
+
   //TODO eviar a estacion correspondiente
   async function onEnviar() {
     try {
@@ -750,6 +765,13 @@ export default function Ticket() {
                   className="tpv-back-button"
                 >
                   Enviar
+                </button>
+
+                <button
+                  onClick={onImprimir}
+                  className="tpv-back-button"
+                >
+                  Imprimir
                 </button>
 
                 <button
