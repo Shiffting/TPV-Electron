@@ -31,6 +31,14 @@ function escapeHtml(value: unknown) {
 }
 
 ipcMain.handle("print-ticket", async (_event, ticket) => {
+  console.log("[ELECTRON] Recibida petición print-ticket", {
+    id: ticket?.id,
+    mesa: ticket?.mesaNombre || "-",
+    comensales: ticket?.comensales || 1,
+    total: Number(ticket?.total || 0).toFixed(2) + " €",
+    lineas: Array.isArray(ticket?.lineas) ? ticket.lineas.length : 0,
+  });
+
   const printWindow = new BrowserWindow({
     show: false,
     width: 302,
@@ -87,7 +95,11 @@ ipcMain.handle("print-ticket", async (_event, ticket) => {
     '</body></html>';
 
   try {
+    console.log("[ELECTRON] HTML del ticket generado");
+
     await printWindow.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html));
+
+    console.log("[ELECTRON] Ejecutando webContents.print()");
 
     await new Promise<void>((resolve, reject) => {
       printWindow.webContents.print(
@@ -98,6 +110,8 @@ ipcMain.handle("print-ticket", async (_event, ticket) => {
           pageSize: { width: 80000, height: 200000 },
         },
         (success, reason) => {
+          console.log("[ELECTRON] Resultado impresión:", { success, reason });
+
           if (success) {
             resolve();
           } else {
@@ -107,7 +121,11 @@ ipcMain.handle("print-ticket", async (_event, ticket) => {
       );
     });
 
+    console.log("[ELECTRON] Impresión finalizada correctamente");
     return { ok: true };
+  } catch (error) {
+    console.error("[ELECTRON] Error imprimiendo ticket:", error);
+    throw error;
   } finally {
     if (!printWindow.isDestroyed()) {
       printWindow.close();
