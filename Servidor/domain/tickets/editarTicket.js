@@ -945,6 +945,13 @@ export async function editarTicket({
                 "ticket:update",
             );
 
+        if (ticketFinalId !== ticketId) {
+            io.to(`ticket:${ticketFinalId}`)
+                .emit(
+                    "ticket:update",
+                );
+        }
+
         return {
             ok: true,
         };
