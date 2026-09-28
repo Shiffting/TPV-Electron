@@ -15,6 +15,8 @@ import Barra from "./pages/Barra";
 import Ticket from "./pages/Ticket";
 import Estaciones from "./pages/Estaciones";
 import Shell from "./shell/Shell";
+import FeatureGate from "./components/FeatureGate";
+import { FEATURES } from "./lib/features";
 
 import { getToken } from "./state/auth";
 
@@ -39,7 +41,7 @@ const router = createHashRouter([
     children: [
       {
         path: "dashboard",
-        element: <Dashboard />,
+        element: <FeatureGate feature={FEATURES.DASHBOARD}><Dashboard /></FeatureGate>,
       },
 
       {
@@ -59,7 +61,7 @@ const router = createHashRouter([
 
       {
         path: "estaciones",
-        element: <Estaciones />,
+        element: <FeatureGate feature={FEATURES.KITCHEN}><Estaciones /></FeatureGate>,
       },
     ],
   },
