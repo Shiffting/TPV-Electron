@@ -30,7 +30,8 @@ export async function editarTicket({
             ticketId,
         });
 
-        const empleadoId = payload.empleadoId
+        const empleadoId = payload.empleadoId;
+        let ticketFinalId = ticketId;
 
         // ACCIONES
         switch (accion) {
@@ -652,8 +653,6 @@ export async function editarTicket({
                     `,
                     [destinoId, ticketId],
                 );
-
-                let ticketFinalId = ticketId;
 
                 if (ticketDestino) {
                     if (ticketDestino.estatus_financiero === "pagado") {
