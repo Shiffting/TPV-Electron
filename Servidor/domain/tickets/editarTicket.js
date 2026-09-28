@@ -609,10 +609,6 @@ export async function editarTicket({
                     throw new Error("MESA_DESTINO_IGUAL");
                 }
 
-                if (ticket.estatus_financiero === "pagado") {
-                    throw new Error("TICKET_YA_PAGADO");
-                }
-
                 const [[mesaDestino]] = await conn.query(
                     `
                     SELECT id, nombre
@@ -626,19 +622,6 @@ export async function editarTicket({
 
                 if (!mesaDestino) {
                     throw new Error("MESA_DESTINO_NO_ENCONTRADA");
-                }
-
-                const [[pagosOrigen]] = await conn.query(
-                    `
-                    SELECT COUNT(*) AS total
-                    FROM pagos
-                    WHERE ticket_id = ?
-                    `,
-                    [ticketId],
-                );
-
-                if (Number(pagosOrigen.total || 0) > 0) {
-                    throw new Error("TICKET_CON_PAGOS_NO_TRASPASABLE");
                 }
 
                 const [[ticketDestino]] = await conn.query(
@@ -655,29 +638,23 @@ export async function editarTicket({
                 );
 
                 if (ticketDestino) {
-                    if (ticketDestino.estatus_financiero === "pagado") {
-                        throw new Error("MESA_DESTINO_PAGADA");
-                    }
-
-                    const [[pagosDestino]] = await conn.query(
-                        `
-                        SELECT COUNT(*) AS total
-                        FROM pagos
-                        WHERE ticket_id = ?
-                        `,
-                        [ticketDestino.id],
-                    );
-
-                    if (Number(pagosDestino.total || 0) > 0) {
-                        throw new Error("MESA_DESTINO_CON_PAGOS");
-                    }
-
+                    // Movemos las líneas activas y también los pagos del ticket origen.
+                    // Las payment_allocations siguen apuntando a las mismas líneas.
                     await conn.execute(
                         `
                         UPDATE ticket_lineas
                         SET ticket_id = ?
                         WHERE ticket_id = ?
                           AND lifecycle_status = 'activo'
+                        `,
+                        [ticketDestino.id, ticketId],
+                    );
+
+                    await conn.execute(
+                        `
+                        UPDATE pagos
+                        SET ticket_id = ?
+                        WHERE ticket_id = ?
                         `,
                         [ticketDestino.id, ticketId],
                     );
