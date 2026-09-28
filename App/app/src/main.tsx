@@ -64,6 +64,11 @@ const router = createHashRouter([
         path: "estaciones",
         element: <FeatureGate feature={FEATURES.KITCHEN}><Estaciones /></FeatureGate>,
       },
+
+      {
+        path: "stock",
+        element: <FeatureGate feature={FEATURES.STOCK}><Stock /></FeatureGate>,
+      },
     ],
   },
 ]);
