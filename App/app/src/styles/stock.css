@@ -1,0 +1,242 @@
+.stock-page {
+  min-height: 100%;
+  color: #e5e7eb;
+}
+
+.stock-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 22px;
+}
+
+.stock-eyebrow {
+  color: #a78bfa;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  margin-bottom: 5px;
+}
+
+.stock-header h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 850;
+}
+
+.stock-header p {
+  margin: 7px 0 0;
+  color: #9ca8bc;
+}
+
+.stock-primary-button,
+.stock-secondary-button {
+  min-height: 46px;
+  border-radius: 13px;
+  border: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 17px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.stock-primary-button {
+  background: linear-gradient(135deg, #7c4dff, #9b6dff);
+  color: white;
+  box-shadow: 0 12px 28px rgba(124, 77, 255, .2);
+}
+
+.stock-secondary-button {
+  background: #eef1f7;
+  color: #1f2937;
+}
+
+.stock-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.stock-summary-card {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .045);
+  border: 1px solid rgba(255, 255, 255, .07);
+}
+
+.stock-summary-card span,
+.stock-summary-card small {
+  display: block;
+}
+
+.stock-summary-card span {
+  color: #aeb8cc;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.stock-summary-card strong {
+  display: block;
+  margin: 8px 0 3px;
+  color: white;
+  font-size: 25px;
+}
+
+.stock-summary-card small {
+  color: #737f94;
+  font-size: 11px;
+}
+
+.stock-summary-warning strong {
+  color: #fbbf24;
+}
+
+.stock-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+
+.stock-tab {
+  min-height: 46px;
+  border: 1px solid rgba(255, 255, 255, .07);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, .035);
+  color: #aeb8cc;
+  padding: 0 15px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.stock-tab.active {
+  background: #eef1f7;
+  color: #111827;
+  border-color: transparent;
+}
+
+.stock-panel {
+  min-height: 430px;
+  padding: 22px;
+  border-radius: 22px;
+  background: #f8fafc;
+  color: #111827;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, .08);
+}
+
+.stock-panel-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.stock-panel-header h2 {
+  margin: 0;
+  font-size: 21px;
+}
+
+.stock-panel-header p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.stock-empty {
+  max-width: 600px;
+  margin: 62px auto 42px;
+  text-align: center;
+}
+
+.stock-empty-icon {
+  width: 68px;
+  height: 68px;
+  margin: 0 auto 16px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+.stock-empty h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.stock-empty p {
+  margin: 10px auto 20px;
+  max-width: 540px;
+  color: #64748b;
+  line-height: 1.55;
+  font-size: 14px;
+}
+
+.stock-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.stock-info-card {
+  display: flex;
+  gap: 13px;
+  padding: 17px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(255, 255, 255, .06);
+}
+
+.stock-info-card > svg {
+  flex-shrink: 0;
+  color: #a78bfa;
+  margin-top: 2px;
+}
+
+.stock-info-card h3 {
+  margin: 0 0 5px;
+  color: white;
+  font-size: 14px;
+}
+
+.stock-info-card p {
+  margin: 0;
+  color: #8e9ab0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 1000px) {
+  .stock-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stock-info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .stock-header {
+    flex-direction: column;
+  }
+
+  .stock-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .stock-panel-header {
+    flex-direction: column;
+  }
+}
