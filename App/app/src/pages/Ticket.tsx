@@ -580,6 +580,8 @@ export default function Ticket() {
                   (a, b) =>
                     a - b,
                 ),
+              // Separamos las líneas por estado financiero.
+              estadoFinanciero: l.estadoFinanciero,
             });
           if (!acc[key]) {
             acc[key] = {
