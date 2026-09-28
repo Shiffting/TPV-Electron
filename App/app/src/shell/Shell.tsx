@@ -13,7 +13,7 @@ import {
   ChefHat,
   LogOut,
   User,
-  BarChart3,
+  BarChart3,\n  Package,
 } from "lucide-react";
 
 import { getToken } from "../state/auth";
@@ -381,16 +381,28 @@ export default function Shell() {
           )}
 
           {canManageFeatures && (
-            <button
-              type="button"
-              className="tpv-sidebar-link tpv-sidebar-link-locked"
-              onClick={() =>
-                setUnavailableFeature(FEATURES.STOCK)
-              }
-            >
-              <span className="tpv-sidebar-feature-icon">+</span>
-              {!sidebarCollapsed && <span>Stock</span>}
-            </button>
+            features.includes(FEATURES.STOCK) ? (
+              <NavLink
+                to="/app/stock"
+                className={({ isActive }) =>
+                  `tpv-sidebar-link ${isActive ? "active" : ""}`
+                }
+              >
+                <Package size={20} />
+                {!sidebarCollapsed && <span>Stock</span>}
+              </NavLink>
+            ) : (
+              <button
+                type="button"
+                className="tpv-sidebar-link tpv-sidebar-link-locked"
+                onClick={() =>
+                  setUnavailableFeature(FEATURES.STOCK)
+                }
+              >
+                <Package size={20} />
+                {!sidebarCollapsed && <span>Stock</span>}
+              </button>
+            )
           )}
 
         </nav>
