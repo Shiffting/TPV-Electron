@@ -9,6 +9,7 @@ import {
 import {
   LayoutDashboard,
   UtensilsCrossed,
+  GlassWater,
   ChefHat,
   LogOut,
   User,
@@ -44,6 +45,7 @@ export default function Shell() {
 
   const isOperationalView =
     location.pathname.includes("mesas") ||
+    location.pathname.includes("barra") ||
     location.pathname.includes("estaciones") ||
     location.pathname.includes("ticket");
 
@@ -182,6 +184,14 @@ export default function Shell() {
 
     if (
       location.pathname.includes(
+        "barra",
+      )
+    ) {
+      return "Barra";
+    }
+
+    if (
+      location.pathname.includes(
         "estaciones",
       )
     ) {
@@ -304,6 +314,41 @@ export default function Shell() {
                 {!sidebarCollapsed && (
                   <span>
                     Mesas
+                  </span>
+                )}
+
+              </NavLink>
+            )}
+
+          {canMesas &&
+            features.includes(
+              "waiter",
+            ) && (
+
+              <NavLink
+                to="/app/barra"
+                className={(
+                  {
+                    isActive,
+                  },
+                ) =>
+                  `
+                tpv-sidebar-link
+                ${isActive
+                    ? "active"
+                    : ""
+                  }
+              `
+                }
+              >
+
+                <GlassWater
+                  size={20}
+                />
+
+                {!sidebarCollapsed && (
+                  <span>
+                    Barra
                   </span>
                 )}
 

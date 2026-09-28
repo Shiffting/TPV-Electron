@@ -4,13 +4,15 @@ import {
   getCategorias,
   getProductos,
   getPropiedadesProducto,
+  getMesas,
   addLinea,
   eliminarLinea,
   enviarCocina,
   editarTicket,
-  agregarPago
+  agregarPago,
+  traspasarMesa
 } from "../api/endpoints";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import SwipeableTicketLine from "../components/SwipeableTicketLine"
 import ModalPago, { type Pago } from "../components/ModalPago";
 
@@ -37,6 +39,8 @@ export default function Ticket() {
   const { id } = useParams();
   const ticketId = Number(id);
   const nav = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isBarra = searchParams.get("modo") === "barra";
 
   // =========================================
   // STATE
@@ -52,6 +56,9 @@ export default function Ticket() {
   const [propsSeleccionadas, setPropsSeleccionadas] = useState<any[]>([]);
   const [editandoLinea, setEditandoLinea] = useState<any>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showTraspasoModal, setShowTraspasoModal] = useState(false);
+  const [mesasTraspaso, setMesasTraspaso] = useState<any[]>([]);
+  const [traspasando, setTraspasando] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -139,7 +146,49 @@ export default function Ticket() {
       [productos, categoriaActiva],
     );
 
-  //Liberar mesa
+  async function abrirTraspaso() {
+    try {
+      const mesas = await getMesas();
+
+      setMesasTraspaso(
+        mesas.filter(
+          (m: any) => m.id !== ticket?.mesaId,
+        ),
+      );
+
+      setShowTraspasoModal(true);
+    } catch (err) {
+      setError("No se pudieron cargar las mesas");
+    }
+  }
+
+  async function ejecutarTraspaso(
+    mesaDestinoId: number,
+  ) {
+    if (traspasando) return;
+
+    try {
+      setTraspasando(true);
+
+      await traspasarMesa(
+        ticketId,
+        mesaDestinoId,
+        version,
+      );
+
+      setShowTraspasoModal(false);
+      nav("/app/mesas");
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.error ||
+        "No se pudo traspasar la mesa",
+      );
+    } finally {
+      setTraspasando(false);
+    }
+  }
+
+  // Cerrar ticket y volver al contexto de origen
   async function liberarMesa() {
     try {
       await editarTicket(
@@ -150,7 +199,7 @@ export default function Ticket() {
           version,
         }
       );
-      nav("/app/mesas");
+      nav(isBarra ? "/app/barra" : "/app/mesas");
     } catch (err: any) {
       setError(
         err?.response?.data?.error ||
@@ -262,6 +311,27 @@ export default function Ticket() {
           await loadTicket();
 
         versionActual = ticketActualizado.ticket.version;
+
+        // En barra, una vez cobrado completamente, cerramos
+        // el ticket inmediatamente para que no quede una
+        // venta abierta accesible desde mesas.
+        if (
+          isBarra &&
+          ticketActualizado.ticket.estadoFinanciero === "pagado"
+        ) {
+          await editarTicket(
+            ticketId,
+            {
+              accion: "cerrar_ticket",
+              payload: {},
+              version: versionActual,
+            },
+          );
+
+          setShowPaymentModal(false);
+          nav("/app/barra");
+          return;
+        }
       }
 
       setShowPaymentModal(false);
@@ -272,6 +342,49 @@ export default function Ticket() {
         err?.response?.data?.error ||
         "No se pudo procesar el cobro",
       );
+    }
+  }
+
+  // IMPRIMIR TICKET SIN COBRAR
+  async function onImprimir() {
+    const lineasImprimir = ticket?.lineas || [];
+    const total = Number(ticket?.total || 0);
+
+    console.log("[TPV] === IMPRIMIENDO TICKET ===");
+    console.log("[TPV] Ticket:", ticket?.id);
+    console.log("[TPV] Mesa:", ticket?.mesaNombre || "-");
+    console.log("[TPV] Comensales:", ticket?.comensales || 1);
+    console.log("[TPV] Total:", total.toFixed(2) + " €");
+    console.log("[TPV] Productos:");
+
+    lineasImprimir.forEach((linea: any) => {
+      console.log(
+        "  ",
+        linea.cantidad + " x " + linea.nombreProducto,
+        "—",
+        Number(linea.subTotal || 0).toFixed(2) + " €",
+        linea.propiedades?.length
+          ? "(Propiedades: " + linea.propiedades.map((p: any) => p.nombre).join(", ") + ")"
+          : ""
+      );
+    });
+
+    try {
+      console.log("[TPV] Enviando ticket a Electron...");
+
+      const result = await (window as any).tpv?.printTicket({
+        id: ticket?.id,
+        mesaNombre: ticket?.mesaNombre,
+        comensales: ticket?.comensales || 1,
+        total,
+        lineas: lineasImprimir,
+      });
+
+      console.log("[TPV] Respuesta de Electron:", result);
+      console.log("[TPV] === FIN IMPRESIÓN ===");
+    } catch (err: any) {
+      console.error("[TPV] Error al imprimir:", err);
+      setError(err?.message || "No se pudo imprimir el ticket");
     }
   }
 
@@ -467,6 +580,8 @@ export default function Ticket() {
                   (a, b) =>
                     a - b,
                 ),
+              // Separamos las líneas por estado financiero.
+              estadoFinanciero: l.estadoFinanciero,
             });
           if (!acc[key]) {
             acc[key] = {
@@ -499,16 +614,16 @@ export default function Ticket() {
       <header className="tpv-header">
         <div className="tpv-header-left">
           <div className="tpv-page-title">
-            Ticket #{ticket?.id}
+            {isBarra ? "Barra" : `Ticket #${ticket?.id}`}
           </div>
 
           <div className="tpv-ticket-badge">
-            {ticket?.mesaNombre || "-"}
+            {isBarra ? "Venta directa" : (ticket?.mesaNombre || "-")}
           </div>
         </div>
 
         <button
-          onClick={() => nav("/app/mesas")}
+          onClick={() => nav(isBarra ? "/app/mesas" : "/app/mesas")}
           className="tpv-back-button"
         >
           Volver
@@ -590,6 +705,7 @@ export default function Ticket() {
                 </div>
               </div>
 
+              {!isBarra && (
               <div className="tpv-comensales-control">
 
                 <button
@@ -625,6 +741,7 @@ export default function Ticket() {
                 </button>
 
               </div>
+              )}
 
               <div className="tpv-ticket-status">
                 {ticket?.estadoFinanciero ||
@@ -744,13 +861,31 @@ export default function Ticket() {
               {/* =====================================================
                 ACCIONES
             ===================================================== */}
-              < div className="tpv-ticket-actions" >
-                <button
-                  onClick={onEnviar}
-                  className="tpv-back-button"
-                >
-                  Enviar
-                </button>
+              <div className="tpv-ticket-actions">
+                <div className="tpv-ticket-actions-top">
+                  <button
+                    onClick={onEnviar}
+                    className="tpv-back-button"
+                  >
+                    Enviar
+                  </button>
+
+                  <button
+                    onClick={onImprimir}
+                    className="tpv-back-button"
+                  >
+                    Imprimir
+                  </button>
+                </div>
+
+                {!isBarra && (
+                  <button
+                    onClick={abrirTraspaso}
+                    className="tpv-back-button"
+                  >
+                    Traspasar mesa
+                  </button>
+                )}
 
                 <button
                   className={
@@ -759,7 +894,6 @@ export default function Ticket() {
                       ? "tpv-back-button pagado"
                       : "tpv-back-button cobrar"
                   }
-
                   onClick={() => {
                     if (ticket?.estadoFinanciero === "pagado") {
                       liberarMesa();
@@ -771,7 +905,7 @@ export default function Ticket() {
                   {
                     ticket?.estadoFinanciero ===
                       "pagado"
-                      ? "Liberar mesa"
+                      ? (isBarra ? "Cobrado" : "Liberar mesa")
                       : "Cobrar"
                   }
                 </button>
@@ -805,6 +939,60 @@ export default function Ticket() {
           </aside>
         </div>
       </div >
+      {showTraspasoModal && (
+        <div className="tpv-modal-overlay">
+          <div className="tpv-modal">
+            <div className="tpv-modal-header">
+              <h2>Traspasar mesa</h2>
+            </div>
+
+            <div className="tpv-modal-body">
+              <p>
+                Selecciona la mesa a la que quieres mover esta venta.
+                Si ya tiene una venta abierta, ambas se unirán.
+              </p>
+
+              {mesasTraspaso.map((m: any) => {
+                const ocupada = !!m.ocupacion?.ocupada;
+
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => ejecutarTraspaso(m.id)}
+                    disabled={traspasando}
+                    className="tpv-prop-button"
+                  >
+                    <span>
+                      {m.nombre}
+                    </span>
+
+                    <span>
+                      {ocupada ? "Unir" : "Mover"}
+                    </span>
+                  </button>
+                );
+              })}
+
+              {!mesasTraspaso.length && (
+                <div className="tpv-ticket-empty">
+                  No hay otras mesas disponibles.
+                </div>
+              )}
+            </div>
+
+            <div className="tpv-modal-footer">
+              <button
+                onClick={() => setShowTraspasoModal(false)}
+                disabled={traspasando}
+                className="tpv-back-button"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {
         configurandoProducto && (
           <div className="tpv-modal-overlay">

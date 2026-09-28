@@ -11,6 +11,7 @@ import "./styles/index.css";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Mesas from "./pages/Mesas";
+import Barra from "./pages/Barra";
 import Ticket from "./pages/Ticket";
 import Estaciones from "./pages/Estaciones";
 import Shell from "./shell/Shell";
@@ -44,6 +45,11 @@ const router = createHashRouter([
       {
         path: "mesas",
         element: <Mesas />,
+      },
+
+      {
+        path: "barra",
+        element: <Barra />,
       },
 
       {
