@@ -277,15 +277,43 @@ export default function Ticket() {
 
   // IMPRIMIR TICKET SIN COBRAR
   async function onImprimir() {
+    const lineasImprimir = ticket?.lineas || [];
+    const total = Number(ticket?.total || 0);
+
+    console.log("[TPV] === IMPRIMIENDO TICKET ===");
+    console.log("[TPV] Ticket:", ticket?.id);
+    console.log("[TPV] Mesa:", ticket?.mesaNombre || "-");
+    console.log("[TPV] Comensales:", ticket?.comensales || 1);
+    console.log("[TPV] Total:", total.toFixed(2) + " €");
+    console.log("[TPV] Productos:");
+
+    lineasImprimir.forEach((linea: any) => {
+      console.log(
+        "  ",
+        linea.cantidad + " x " + linea.nombreProducto,
+        "—",
+        Number(linea.subTotal || 0).toFixed(2) + " €",
+        linea.propiedades?.length
+          ? "(Propiedades: " + linea.propiedades.map((p: any) => p.nombre).join(", ") + ")"
+          : ""
+      );
+    });
+
     try {
-      await (window as any).tpv?.printTicket({
+      console.log("[TPV] Enviando ticket a Electron...");
+
+      const result = await (window as any).tpv?.printTicket({
         id: ticket?.id,
         mesaNombre: ticket?.mesaNombre,
         comensales: ticket?.comensales || 1,
-        total: Number(ticket?.total || 0),
-        lineas: ticket?.lineas || [],
+        total,
+        lineas: lineasImprimir,
       });
+
+      console.log("[TPV] Respuesta de Electron:", result);
+      console.log("[TPV] === FIN IMPRESIÓN ===");
     } catch (err: any) {
+      console.error("[TPV] Error al imprimir:", err);
       setError(err?.message || "No se pudo imprimir el ticket");
     }
   }
