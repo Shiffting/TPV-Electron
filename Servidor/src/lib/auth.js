@@ -43,6 +43,7 @@ export function authMiddleware(
             uid: payload.uid,
             email: payload.email,
             role: payload.role,
+            negocioId: payload.negocioId,
         };
 
         next();
